@@ -1,0 +1,120 @@
+// Simplified Nexus CRM Database Schema for SQLite
+// Basic schema for testing authentication
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Authentication and User Management
+model User {
+  id                String               @id @default(cuid())
+  email             String               @unique
+  username          String?              @unique
+  firstName         String
+  lastName          String
+  phone             String?
+  avatar            String?
+  password          String
+  emailVerified     DateTime?
+  isActive          Boolean              @default(true)
+  lastLogin         DateTime?
+  twoFactorEnabled  Boolean              @default(false)
+  twoFactorSecret   String?
+  passwordResetToken String?
+  passwordResetExpires DateTime?
+  role              UserRole
+  showroomId        String?
+  permissions       String               @default("{}")
+  preferences       String               @default("{}")
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  deletedAt         DateTime?
+
+  // Relationships
+  showroom          Showroom?            @relation(fields: [showroomId], references: [id])
+  sessions          Session[]
+  accounts          Account[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  ipAddress    String?
+  userAgent    String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// Basic Showroom model
+model Showroom {
+  id              String        @id @default(cuid())
+  name            String
+  type            ShowroomType
+  address         String        // JSON string
+  phone           String
+  email           String
+  manager         String?
+  isActive        Boolean       @default(true)
+  settings        String        @default("{}")
+  branding        String        @default("{}")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  // Relationships
+  users           User[]
+
+  @@map("showrooms")
+}
+
+// Enums
+enum UserRole {
+  SALESPERSON
+  SALES_MANAGER
+  REGIONAL_MANAGER
+  PROJECT_MANAGER
+  INSTALL_MANAGER
+  INSTALLER
+  SURVEYOR
+  ADMIN
+  DIRECTOR
+  BOOKKEEPER
+  CUSTOMER
+  AI_ASSISTANT
+}
+
+enum ShowroomType {
+  RETAIL
+  FRANCHISE
+}

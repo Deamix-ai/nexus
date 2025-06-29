@@ -1,0 +1,795 @@
+// Nexus CRM Database Schema for Bowman Bathrooms
+// Enterprise-grade schema supporting multi-location operations, 
+// role-based permissions, and comprehensive audit trails
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Authentication and User Management
+model User {
+  id                String               @id @default(cuid())
+  email             String               @unique
+  username          String?              @unique
+  firstName         String
+  lastName          String
+  phone             String?
+  avatar            String?
+  password          String
+  emailVerified     DateTime?
+  isActive          Boolean              @default(true)
+  lastLogin         DateTime?
+  twoFactorEnabled  Boolean              @default(false)
+  twoFactorSecret   String?
+  passwordResetToken String?
+  passwordResetExpires DateTime?
+  role              UserRole
+  showroomId        String?
+  permissions       String                 @default("{}")
+  preferences       String                 @default("{}")
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  deletedAt         DateTime?
+
+  // Relationships
+  showroom          Showroom?            @relation(fields: [showroomId], references: [id])
+  assignedProjects  Project[]            @relation("AssignedUser")
+  createdProjects   Project[]            @relation("CreatedBy")
+  activities        Activity[]
+  messages          Message[]
+  notifications     Notification[]
+  auditLogs         AuditLog[]
+  sessions          Session[]
+  accounts          Account[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  ipAddress    String?
+  userAgent    String?
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// Locations and Organizations
+model Showroom {
+  id              String        @id @default(cuid())
+  name            String
+  type            ShowroomType
+  address         String          // Street, city, state, postcode, country
+  phone           String
+  email           String
+  manager         String?
+  isActive        Boolean       @default(true)
+  settings        String          @default("{}")
+  branding        String          @default("{}")
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
+
+  // Relationships
+  users           User[]
+  projects        Project[]
+  products        Product[]
+  territories     Territory[]
+
+  @@map("showrooms")
+}
+
+model Territory {
+  id          String     @id @default(cuid())
+  name        String
+  description String?
+  postcodes   String[]
+  showroomId  String
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  showroom    Showroom   @relation(fields: [showroomId], references: [id])
+  projects    Project[]
+
+  @@map("territories")
+}
+
+// Core CRM - Projects and Pipeline
+model Project {
+  id                    String            @id @default(cuid())
+  projectNumber         String            @unique
+  name                  String
+  status                ProjectStatus
+  stage                 ProjectStage
+  priority              Priority          @default(MEDIUM)
+  
+  // Client Information
+  clientName            String
+  clientEmail           String
+  clientPhone           String
+  clientAddress         Json
+  leadSource            String
+  leadSourceDetail      String?
+  
+  // Project Details
+  description           String?
+  estimatedValue        Decimal?          @db.Decimal(10,2)
+  actualValue           Decimal?          @db.Decimal(10,2)
+  margin                Decimal?          @db.Decimal(5,2)
+  
+  // Timeline
+  enquiryDate           DateTime          @default(now())
+  consultationDate      DateTime?
+  surveyDate            DateTime?
+  designPresentedDate   DateTime?
+  saleDate              DateTime?
+  designSignOffDate     DateTime?
+  handoverDate          DateTime?
+  scheduledStartDate    DateTime?
+  actualStartDate       DateTime?
+  scheduledEndDate      DateTime?
+  actualEndDate         DateTime?
+  completionDate        DateTime?
+  
+  // Assignments
+  showroomId            String
+  territoryId           String?
+  assignedUserId        String?
+  createdById           String
+  
+  // Metadata
+  tags                  String[]
+  customFields          Json              @default("{}")
+  gatingRequirements    Json              @default("{}")
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  deletedAt             DateTime?
+
+  // Relationships
+  showroom              Showroom          @relation(fields: [showroomId], references: [id])
+  territory             Territory?        @relation(fields: [territoryId], references: [id])
+  assignedUser          User?             @relation("AssignedUser", fields: [assignedUserId], references: [id])
+  createdBy             User              @relation("CreatedBy", fields: [createdById], references: [id])
+  
+  activities            Activity[]
+  documents             Document[]
+  invoices              Invoice[]
+  messages              Message[]
+  surveys               Survey[]
+  designs               Design[]
+  schedules             ProjectSchedule[]
+  checklistItems        ChecklistItem[]
+  issues                Issue[]
+  productSelections     ProductSelection[]
+  purchaseOrders        PurchaseOrder[]
+
+  @@map("projects")
+}
+
+// Communication and Activities
+model Activity {
+  id          String        @id @default(cuid())
+  type        ActivityType
+  title       String
+  description String?
+  date        DateTime      @default(now())
+  duration    Int?          // in minutes
+  outcome     String?
+  isCompleted Boolean       @default(false)
+  projectId   String
+  userId      String
+  metadata    Json          @default("{}")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id])
+
+  @@map("activities")
+}
+
+model Message {
+  id          String        @id @default(cuid())
+  content     String        @db.Text
+  type        MessageType
+  direction   Direction
+  channel     Channel
+  isRead      Boolean       @default(false)
+  projectId   String
+  userId      String
+  metadata    Json          @default("{}")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user        User          @relation(fields: [userId], references: [id])
+
+  @@map("messages")
+}
+
+// Document Management
+model Document {
+  id            String        @id @default(cuid())
+  name          String
+  type          DocumentType
+  category      String
+  description   String?
+  fileName      String
+  filePath      String
+  fileSize      Int
+  mimeType      String
+  version       Int           @default(1)
+  isLatest      Boolean       @default(true)
+  isSigned      Boolean       @default(false)
+  signedAt      DateTime?
+  signedBy      String?
+  projectId     String
+  uploadedBy    String
+  metadata      Json          @default("{}")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  deletedAt     DateTime?
+
+  project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("documents")
+}
+
+// Financial Management
+model Invoice {
+  id              String          @id @default(cuid())
+  invoiceNumber   String          @unique
+  type            InvoiceType
+  description     String
+  amount          Decimal         @db.Decimal(10,2)
+  taxAmount       Decimal?        @db.Decimal(10,2)
+  totalAmount     Decimal         @db.Decimal(10,2)
+  status          PaymentStatus
+  dueDate         DateTime
+  paidDate        DateTime?
+  paymentMethod   String?
+  paymentRef      String?
+  stripePaymentId String?
+  projectId       String
+  lineItems       Json            @default("[]")
+  metadata        Json            @default("{}")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("invoices")
+}
+
+// Survey and Design
+model Survey {
+  id              String          @id @default(cuid())
+  type            SurveyType
+  status          SurveyStatus
+  scheduledDate   DateTime
+  completedDate   DateTime?
+  notes           String?         @db.Text
+  measurements    Json            @default("{}")
+  photos          String[]
+  recommendations String?         @db.Text
+  projectId       String
+  surveyorId      String?
+  metadata        Json            @default("{}")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("surveys")
+}
+
+model Design {
+  id              String          @id @default(cuid())
+  name            String
+  version         Int             @default(1)
+  status          DesignStatus
+  description     String?
+  designFiles     String[]
+  specifications  Json            @default("{}")
+  estimatedCost   Decimal?        @db.Decimal(10,2)
+  presentedDate   DateTime?
+  approvedDate    DateTime?
+  rejectedDate    DateTime?
+  rejectionReason String?
+  projectId       String
+  designerId      String?
+  metadata        Json            @default("{}")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("designs")
+}
+
+// Product Catalogue and Inventory
+model Product {
+  id              String              @id @default(cuid())
+  sku             String              @unique
+  name            String
+  description     String?             @db.Text
+  category        String
+  subcategory     String?
+  brand           String
+  supplier        String
+  cost            Decimal             @db.Decimal(10,2)
+  price           Decimal             @db.Decimal(10,2)
+  margin          Decimal             @db.Decimal(5,2)
+  stockLevel      Int                 @default(0)
+  minStockLevel   Int                 @default(0)
+  unit            String              @default("each")
+  specifications  Json                @default("{}")
+  images          String[]
+  isActive        Boolean             @default(true)
+  showroomId      String?
+  metadata        Json                @default("{}")
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  deletedAt       DateTime?
+
+  showroom        Showroom?           @relation(fields: [showroomId], references: [id])
+  selections      ProductSelection[]
+  orderItems      PurchaseOrderItem[]
+
+  @@map("products")
+}
+
+model ProductSelection {
+  id          String    @id @default(cuid())
+  quantity    Int
+  unitPrice   Decimal   @db.Decimal(10,2)
+  totalPrice  Decimal   @db.Decimal(10,2)
+  notes       String?
+  projectId   String
+  productId   String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  product     Product   @relation(fields: [productId], references: [id])
+
+  @@map("product_selections")
+}
+
+model PurchaseOrder {
+  id              String              @id @default(cuid())
+  orderNumber     String              @unique
+  status          PurchaseOrderStatus
+  supplier        String
+  orderDate       DateTime            @default(now())
+  expectedDate    DateTime?
+  deliveredDate   DateTime?
+  totalAmount     Decimal             @db.Decimal(10,2)
+  notes           String?
+  projectId       String
+  createdBy       String
+  metadata        Json                @default("{}")
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  project         Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  items           PurchaseOrderItem[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id              String        @id @default(cuid())
+  quantity        Int
+  unitPrice       Decimal       @db.Decimal(10,2)
+  totalPrice      Decimal       @db.Decimal(10,2)
+  receivedQty     Int           @default(0)
+  purchaseOrderId String
+  productId       String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product         Product       @relation(fields: [productId], references: [id])
+
+  @@map("purchase_order_items")
+}
+
+// Project Management and Scheduling
+model ProjectSchedule {
+  id              String          @id @default(cuid())
+  title           String
+  description     String?
+  startDate       DateTime
+  endDate         DateTime
+  isAllDay        Boolean         @default(false)
+  type            ScheduleType
+  status          ScheduleStatus  @default(SCHEDULED)
+  assignedTeam    String[]
+  location        String?
+  notes           String?
+  projectId       String
+  createdBy       String
+  metadata        Json            @default("{}")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_schedules")
+}
+
+model ChecklistItem {
+  id              String          @id @default(cuid())
+  title           String
+  description     String?
+  category        String
+  isRequired      Boolean         @default(false)
+  isCompleted     Boolean         @default(false)
+  completedDate   DateTime?
+  completedBy     String?
+  dueDate         DateTime?
+  priority        Priority        @default(MEDIUM)
+  stage           ProjectStage
+  projectId       String
+  metadata        Json            @default("{}")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("checklist_items")
+}
+
+// Issues and Quality Management
+model Issue {
+  id              String          @id @default(cuid())
+  title           String
+  description     String          @db.Text
+  category        IssueCategory
+  severity        IssueSeverity
+  status          IssueStatus     @default(OPEN)
+  priority        Priority        @default(MEDIUM)
+  reportedBy      String
+  assignedTo      String?
+  reportedDate    DateTime        @default(now())
+  targetDate      DateTime?
+  resolvedDate    DateTime?
+  resolution      String?         @db.Text
+  photos          String[]
+  projectId       String
+  metadata        Json            @default("{}")
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  project         Project         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("issues")
+}
+
+// Notifications and System
+model Notification {
+  id          String              @id @default(cuid())
+  title       String
+  content     String              @db.Text
+  type        NotificationType
+  priority    Priority            @default(MEDIUM)
+  isRead      Boolean             @default(false)
+  readAt      DateTime?
+  userId      String
+  entityType  String?
+  entityId    String?
+  metadata    Json                @default("{}")
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model AuditLog {
+  id          String      @id @default(cuid())
+  action      String
+  entityType  String
+  entityId    String
+  oldValues   Json?
+  newValues   Json?
+  userId      String?
+  ipAddress   String?
+  userAgent   String?
+  timestamp   DateTime    @default(now())
+  metadata    Json        @default("{}")
+
+  user        User?       @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
+}
+
+// System Configuration
+model SystemSetting {
+  id          String      @id @default(cuid())
+  key         String      @unique
+  value       Json
+  category    String
+  description String?
+  isPublic    Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@map("system_settings")
+}
+
+// Integration Logs
+model IntegrationLog {
+  id              String              @id @default(cuid())
+  integration     IntegrationType
+  action          String
+  status          IntegrationStatus
+  requestData     Json?
+  responseData    Json?
+  errorMessage    String?
+  entityType      String?
+  entityId        String?
+  createdAt       DateTime            @default(now())
+
+  @@map("integration_logs")
+}
+
+// Enums
+enum UserRole {
+  SALESPERSON
+  SALES_MANAGER
+  REGIONAL_MANAGER
+  PROJECT_MANAGER
+  INSTALL_MANAGER
+  INSTALLER
+  SURVEYOR
+  ADMIN
+  DIRECTOR
+  BOOKKEEPER
+  CUSTOMER
+  AI_ASSISTANT
+}
+
+enum ShowroomType {
+  RETAIL
+  FRANCHISE
+}
+
+enum ProjectStatus {
+  ACTIVE
+  ON_HOLD
+  CANCELLED
+  COMPLETED
+}
+
+enum ProjectStage {
+  ENQUIRY
+  ENGAGED_ENQUIRY
+  CONSULTATION_BOOKED
+  QUALIFIED_LEAD
+  SURVEY_COMPLETE
+  DESIGN_PRESENTED
+  SALE_CLIENT_COMMITS
+  DESIGN_SIGN_OFF
+  PAYMENT_75_PROJECT_HANDOVER
+  PROJECT_SCHEDULED
+  INSTALLATION_IN_PROGRESS
+  COMPLETION_SIGN_OFF
+  COMPLETED
+  LOST_NOT_PROCEEDING
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum ActivityType {
+  CALL
+  EMAIL
+  MEETING
+  SITE_VISIT
+  FOLLOW_UP
+  CONSULTATION
+  SURVEY
+  DESIGN_REVIEW
+  INSTALLATION
+  HANDOVER
+  OTHER
+}
+
+enum MessageType {
+  EMAIL
+  SMS
+  PORTAL_MESSAGE
+  INTERNAL_NOTE
+  SYSTEM_MESSAGE
+  WHATSAPP
+}
+
+enum Direction {
+  INBOUND
+  OUTBOUND
+}
+
+enum Channel {
+  EMAIL
+  SMS
+  PHONE
+  PORTAL
+  WHATSAPP
+  IN_PERSON
+}
+
+enum DocumentType {
+  CONTRACT
+  INVOICE
+  RECEIPT
+  DESIGN
+  SURVEY_REPORT
+  PHOTO
+  SPECIFICATION
+  WARRANTY
+  CERTIFICATE
+  PERMIT
+  CORRESPONDENCE
+  OTHER
+}
+
+enum InvoiceType {
+  ESTIMATE
+  DEPOSIT
+  PROGRESS
+  FINAL
+  ADDITIONAL
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+  PARTIAL
+}
+
+enum SurveyType {
+  INITIAL
+  TECHNICAL
+  FOLLOW_UP
+  PRE_INSTALLATION
+  POST_INSTALLATION
+}
+
+enum SurveyStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum DesignStatus {
+  DRAFT
+  PRESENTED
+  APPROVED
+  REJECTED
+  REVISION_REQUIRED
+}
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  ACKNOWLEDGED
+  PARTIALLY_DELIVERED
+  DELIVERED
+  CANCELLED
+}
+
+enum ScheduleType {
+  CONSULTATION
+  SURVEY
+  INSTALLATION
+  DELIVERY
+  MEETING
+  FOLLOW_UP
+}
+
+enum ScheduleStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum IssueCategory {
+  QUALITY
+  DELIVERY
+  INSTALLATION
+  DESIGN
+  COMMUNICATION
+  BILLING
+  WARRANTY
+  OTHER
+}
+
+enum IssueSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IssueStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+  ESCALATED
+}
+
+enum NotificationType {
+  SYSTEM
+  PROJECT_UPDATE
+  TASK_REMINDER
+  PAYMENT_DUE
+  STAGE_CHANGE
+  ISSUE_REPORTED
+  MESSAGE_RECEIVED
+}
+
+enum IntegrationType {
+  STRIPE
+  TWILIO
+  DOCUSIGN
+  ZAPIER
+  OUTLOOK
+  XERO
+  WHATSAPP
+  MAILCHIMP
+  GOOGLE_MAPS
+  ONEDRIVE
+  TRUSTPILOT
+  OPENAI
+}
+
+enum IntegrationStatus {
+  SUCCESS
+  FAILED
+  PENDING
+  RETRYING
+}
