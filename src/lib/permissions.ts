@@ -42,14 +42,14 @@ export const ROLE_PERMISSIONS: Record<UserRole, RoleConfig> = {
       },
       {
         resource: 'messages',
-        actions: ['read', 'create']
+        actions: ['read', 'create', 'update']
       }
     ],
     dashboardUrl: '/dashboard/sales',
     canAccessMobile: false,
     requiresTwoFactor: false
   },
-  
+
   SALES_MANAGER: {
     permissions: [
       {
@@ -80,7 +80,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RoleConfig> = {
     canAccessMobile: false,
     requiresTwoFactor: true
   },
-  
+
   REGIONAL_MANAGER: {
     permissions: [
       {
@@ -108,7 +108,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RoleConfig> = {
     canAccessMobile: false,
     requiresTwoFactor: true
   },
-  
+
   PROJECT_MANAGER: {
     permissions: [
       {
@@ -137,7 +137,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RoleConfig> = {
     canAccessMobile: true,
     requiresTwoFactor: false
   },
-  
+
   INSTALL_MANAGER: {
     permissions: [
       {
@@ -161,7 +161,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RoleConfig> = {
     canAccessMobile: true,
     requiresTwoFactor: false
   },
-  
+
   INSTALLER: {
     permissions: [
       {
@@ -186,7 +186,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RoleConfig> = {
     canAccessMobile: true,
     requiresTwoFactor: false
   },
-  
+
   SURVEYOR: {
     permissions: [
       {
@@ -207,7 +207,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RoleConfig> = {
     canAccessMobile: true,
     requiresTwoFactor: false
   },
-  
+
   ADMIN: {
     permissions: [
       {
@@ -219,7 +219,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RoleConfig> = {
     canAccessMobile: false,
     requiresTwoFactor: true
   },
-  
+
   DIRECTOR: {
     permissions: [
       {
@@ -239,7 +239,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RoleConfig> = {
     canAccessMobile: false,
     requiresTwoFactor: true
   },
-  
+
   BOOKKEEPER: {
     permissions: [
       {
@@ -259,7 +259,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RoleConfig> = {
     canAccessMobile: false,
     requiresTwoFactor: true
   },
-  
+
   CUSTOMER: {
     permissions: [
       {
@@ -283,7 +283,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RoleConfig> = {
     canAccessMobile: false,
     requiresTwoFactor: false
   },
-  
+
   AI_ASSISTANT: {
     permissions: [
       {
@@ -301,78 +301,78 @@ export const ROLE_PERMISSIONS: Record<UserRole, RoleConfig> = {
 // Stage gating requirements
 export const STAGE_REQUIREMENTS: Record<ProjectStage, string[]> = {
   ENQUIRY: [],
-  
+
   ENGAGED_ENQUIRY: [
     'initial_contact_logged',
     'client_details_captured'
   ],
-  
+
   CONSULTATION_BOOKED: [
     'consultation_scheduled',
     'client_confirmed'
   ],
-  
+
   QUALIFIED_LEAD: [
     'consultation_completed',
     'budget_confirmed',
     'timeline_agreed'
   ],
-  
+
   SURVEY_COMPLETE: [
     'survey_scheduled',
     'survey_completed',
     'measurements_captured',
     'photos_uploaded'
   ],
-  
+
   DESIGN_PRESENTED: [
     'design_created',
     'design_presented_to_client',
     'quote_provided'
   ],
-  
+
   SALE_CLIENT_COMMITS: [
     'contract_signed',
     'deposit_paid',
     'terms_agreed'
   ],
-  
+
   DESIGN_SIGN_OFF: [
     'final_design_approved',
     'specifications_confirmed',
     'client_sign_off'
   ],
-  
+
   PAYMENT_75_PROJECT_HANDOVER: [
     'progress_payment_received',
     'project_manager_assigned',
     'handover_completed'
   ],
-  
+
   PROJECT_SCHEDULED: [
     'installation_scheduled',
     'materials_ordered',
     'team_assigned'
   ],
-  
+
   INSTALLATION_IN_PROGRESS: [
     'installation_started',
     'daily_progress_logged'
   ],
-  
+
   COMPLETION_SIGN_OFF: [
     'installation_completed',
     'quality_check_passed',
     'client_walkthrough',
     'client_sign_off'
   ],
-  
+
   COMPLETED: [
     'final_payment_received',
     'warranty_issued',
     'project_closed'
   ],
-  
+
   LOST_NOT_PROCEEDING: [
     'reason_documented'
   ]
@@ -385,10 +385,10 @@ export function hasPermission(
   context?: Record<string, any>
 ): boolean {
   const roleConfig = ROLE_PERMISSIONS[userRole]
-  
+
   // Admin has all permissions
   if (userRole === 'ADMIN') return true
-  
+
   // Check if role has permission for this resource and action
   for (const permission of roleConfig.permissions) {
     if (permission.resource === '*' || permission.resource === resource) {
@@ -401,7 +401,7 @@ export function hasPermission(
       }
     }
   }
-  
+
   return false
 }
 
@@ -426,7 +426,7 @@ export function canAdvanceStage(
 ): { canAdvance: boolean; missingRequirements: string[] } {
   const required = STAGE_REQUIREMENTS[nextStage] || []
   const missing = required.filter(req => !completedRequirements.includes(req))
-  
+
   return {
     canAdvance: missing.length === 0,
     missingRequirements: missing
@@ -450,6 +450,6 @@ export function getRequiredDocuments(stage: ProjectStage): string[] {
     COMPLETED: ['final_payment_receipt', 'warranty_certificate'],
     LOST_NOT_PROCEEDING: ['loss_reason_report']
   }
-  
+
   return documentRequirements[stage] || []
 }

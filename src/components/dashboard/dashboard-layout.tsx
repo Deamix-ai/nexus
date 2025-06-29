@@ -25,6 +25,8 @@ import {
   MapPin,
   UserCheck,
   TrendingUp,
+  Phone,
+  DollarSign,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ROLE_PERMISSIONS } from "@/lib/permissions";
@@ -51,16 +53,16 @@ const NAVIGATION = {
     { name: "Dashboard", href: "/dashboard/admin", icon: Home },
     { name: "Users", href: "/dashboard/admin/users", icon: Users },
     { name: "Showrooms", href: "/dashboard/admin/showrooms", icon: Building2 },
-    { name: "System Settings", href: "/dashboard/admin/settings", icon: Settings },
+    { name: "Projects", href: "/dashboard/projects", icon: FileText },
+    { name: "Clients", href: "/dashboard/clients", icon: Users },
+    { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
     { name: "Reports", href: "/dashboard/admin/reports", icon: BarChart3 },
-    { name: "Audit Logs", href: "/dashboard/admin/audit", icon: Shield },
   ],
   SALESPERSON: [
     { name: "Dashboard", href: "/dashboard/sales", icon: Home },
     { name: "Projects", href: "/dashboard/projects", icon: FileText },
     { name: "Clients", href: "/dashboard/clients", icon: Users },
     { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
-    { name: "Messages", href: "/dashboard/sales/messages", icon: MessageSquare },
     { name: "Reports", href: "/dashboard/reports", icon: BarChart3 },
   ],
   SALES_MANAGER: [
@@ -68,6 +70,7 @@ const NAVIGATION = {
     { name: "Team Projects", href: "/dashboard/sales-management/projects", icon: FileText },
     { name: "Team Performance", href: "/dashboard/sales-management/team", icon: TrendingUp },
     { name: "Customers", href: "/dashboard/sales-management/customers", icon: Users },
+    { name: "Calendar", href: "/dashboard/calendar", icon: Calendar },
     { name: "Reports", href: "/dashboard/sales-management/reports", icon: BarChart3 },
   ],
   PROJECT_MANAGER: [
@@ -75,7 +78,6 @@ const NAVIGATION = {
     { name: "My Projects", href: "/dashboard/projects/list", icon: FileText },
     { name: "Schedule", href: "/dashboard/projects/schedule", icon: Calendar },
     { name: "Purchase Orders", href: "/dashboard/projects/orders", icon: Package },
-    { name: "Communications", href: "/dashboard/projects/messages", icon: MessageSquare },
   ],
   INSTALL_MANAGER: [
     { name: "Dashboard", href: "/dashboard/installations", icon: Home },
@@ -89,11 +91,13 @@ const NAVIGATION = {
     { name: "Performance", href: "/dashboard/executive/performance", icon: TrendingUp },
     { name: "Reports", href: "/dashboard/executive/reports", icon: BarChart3 },
     { name: "Analytics", href: "/dashboard/executive/analytics", icon: BarChart3 },
+    { name: "Accounting", href: "/dashboard/accounting", icon: DollarSign },
   ],
   BOOKKEEPER: [
     { name: "Financial Dashboard", href: "/dashboard/finance", icon: Home },
     { name: "Invoices", href: "/dashboard/finance/invoices", icon: FileText },
     { name: "Payments", href: "/dashboard/finance/payments", icon: CreditCard },
+    { name: "Accounting", href: "/dashboard/accounting", icon: DollarSign },
     { name: "Reports", href: "/dashboard/finance/reports", icon: BarChart3 },
   ],
   CUSTOMER: [
@@ -140,7 +144,7 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
           {navigation.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href || pathname.startsWith(item.href + "/");
-            
+
             return (
               <Link
                 key={item.name}
@@ -221,11 +225,12 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                 </button>
 
                 {userMenuOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border py-1 z-50">
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border py-1 z-50">
                     <div className="px-4 py-2 border-b">
                       <p className="text-sm font-medium text-gray-900">{user.name}</p>
                       <p className="text-xs text-gray-500">{user.email}</p>
                     </div>
+
                     <Link
                       href="/dashboard/profile"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
@@ -233,6 +238,76 @@ export function DashboardLayout({ children, user }: DashboardLayoutProps) {
                     >
                       Profile Settings
                     </Link>
+
+                    <Link
+                      href="/dashboard/security/two-factor"
+                      className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      Security Settings
+                    </Link>
+
+                    {/* Admin-specific menu items */}
+                    {(user.role === 'ADMIN' || user.role === 'SALES_MANAGER' || user.role === 'DIRECTOR') && (
+                      <>
+                        <div className="border-t my-1" />
+                        <Link
+                          href="/dashboard/sms"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          SMS Management
+                        </Link>
+                        <Link
+                          href="/dashboard/documents/signing"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          Document Signing
+                        </Link>
+                      </>
+                    )}
+
+                    {/* Accounting access */}
+                    {(user.role === 'DIRECTOR' || user.role === 'BOOKKEEPER' || user.role === 'SALES_MANAGER') && (
+                      <Link
+                        href="/dashboard/accounting"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        Accounting
+                      </Link>
+                    )}
+
+                    {/* Admin system settings */}
+                    {user.role === 'ADMIN' && (
+                      <>
+                        <div className="border-t my-1" />
+                        <Link
+                          href="/dashboard/admin/permissions"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          Permissions
+                        </Link>
+                        <Link
+                          href="/dashboard/admin/settings"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          System Settings
+                        </Link>
+                        <Link
+                          href="/dashboard/admin/audit"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          onClick={() => setUserMenuOpen(false)}
+                        >
+                          Audit Logs
+                        </Link>
+                      </>
+                    )}
+
+                    <div className="border-t my-1" />
                     <button
                       onClick={() => signOut({ callbackUrl: '/' })}
                       className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"

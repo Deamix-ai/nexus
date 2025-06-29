@@ -1,4 +1,4 @@
-import { PrismaClient, UserRole, ShowroomType, ProjectStage, ProjectStatus } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
@@ -10,19 +10,19 @@ async function main() {
   const retailShowroom = await prisma.showroom.create({
     data: {
       name: 'Bowman Bathrooms - Manchester',
-      type: ShowroomType.RETAIL,
-      address: {
+      type: 'RETAIL',
+      address: JSON.stringify({
         street: '123 Design Quarter',
         city: 'Manchester',
         state: 'Greater Manchester',
         postcode: 'M1 7DA',
         country: 'United Kingdom'
-      },
+      }),
       phone: '+44 161 123 4567',
       email: 'manchester@bowmanbathrooms.com',
       manager: 'Sarah Johnson',
       isActive: true,
-      settings: {
+      settings: JSON.stringify({
         businessHours: {
           monday: '9:00-17:30',
           tuesday: '9:00-17:30',
@@ -34,31 +34,31 @@ async function main() {
         },
         currency: 'GBP',
         timezone: 'Europe/London'
-      },
-      branding: {
+      }),
+      branding: JSON.stringify({
         primaryColor: '#1e3a8a',
         secondaryColor: '#f59e0b',
         logo: '/logos/manchester.png'
-      }
+      })
     }
   })
 
   const franchiseShowroom = await prisma.showroom.create({
     data: {
       name: 'Bowman Bathrooms - Leeds Franchise',
-      type: ShowroomType.FRANCHISE,
-      address: {
+      type: 'FRANCHISE',
+      address: JSON.stringify({
         street: '456 Bathroom Street',
         city: 'Leeds',
         state: 'West Yorkshire',
         postcode: 'LS1 4AB',
         country: 'United Kingdom'
-      },
+      }),
       phone: '+44 113 987 6543',
       email: 'leeds@bowmanbathrooms.com',
       manager: 'Michael Thompson',
       isActive: true,
-      settings: {
+      settings: JSON.stringify({
         businessHours: {
           monday: '9:00-17:00',
           tuesday: '9:00-17:00',
@@ -70,12 +70,12 @@ async function main() {
         },
         currency: 'GBP',
         timezone: 'Europe/London'
-      },
-      branding: {
+      }),
+      branding: JSON.stringify({
         primaryColor: '#1e3a8a',
         secondaryColor: '#f59e0b',
         logo: '/logos/leeds.png'
-      }
+      })
     }
   })
 
@@ -89,7 +89,7 @@ async function main() {
       lastName: 'Administrator',
       phone: '+44 161 123 4567',
       password: hashedPassword,
-      role: UserRole.ADMIN,
+      role: "ADMIN",
       isActive: true,
       twoFactorEnabled: true,
       emailVerified: new Date(),
@@ -104,7 +104,7 @@ async function main() {
       lastName: 'Johnson',
       phone: '+44 161 123 4568',
       password: hashedPassword,
-      role: UserRole.SALES_MANAGER,
+      role: "SALES_MANAGER",
       isActive: true,
       twoFactorEnabled: true,
       emailVerified: new Date(),
@@ -119,7 +119,7 @@ async function main() {
       lastName: 'Smith',
       phone: '+44 161 123 4569',
       password: hashedPassword,
-      role: UserRole.SALESPERSON,
+      role: "SALESPERSON",
       isActive: true,
       emailVerified: new Date(),
       showroomId: retailShowroom.id
@@ -133,7 +133,7 @@ async function main() {
       lastName: 'Wilson',
       phone: '+44 161 123 4570',
       password: hashedPassword,
-      role: UserRole.PROJECT_MANAGER,
+      role: "PROJECT_MANAGER",
       isActive: true,
       emailVerified: new Date(),
       showroomId: retailShowroom.id
@@ -147,7 +147,7 @@ async function main() {
       lastName: 'Brown',
       phone: '+44 161 123 4571',
       password: hashedPassword,
-      role: UserRole.INSTALL_MANAGER,
+      role: "INSTALL_MANAGER",
       isActive: true,
       emailVerified: new Date(),
       showroomId: retailShowroom.id
@@ -161,7 +161,7 @@ async function main() {
       lastName: 'Davis',
       phone: '+44 161 123 4572',
       password: hashedPassword,
-      role: UserRole.INSTALLER,
+      role: "INSTALLER",
       isActive: true,
       emailVerified: new Date(),
       showroomId: retailShowroom.id
@@ -175,7 +175,7 @@ async function main() {
       lastName: 'Taylor',
       phone: '+44 161 123 4573',
       password: hashedPassword,
-      role: UserRole.SURVEYOR,
+      role: "SURVEYOR",
       isActive: true,
       emailVerified: new Date(),
       showroomId: retailShowroom.id
@@ -189,7 +189,7 @@ async function main() {
       lastName: 'Bowman',
       phone: '+44 161 123 4574',
       password: hashedPassword,
-      role: UserRole.DIRECTOR,
+      role: "DIRECTOR",
       isActive: true,
       twoFactorEnabled: true,
       emailVerified: new Date(),
@@ -204,7 +204,7 @@ async function main() {
       lastName: 'Clark',
       phone: '+44 161 123 4575',
       password: hashedPassword,
-      role: UserRole.BOOKKEEPER,
+      role: "BOOKKEEPER",
       isActive: true,
       twoFactorEnabled: true,
       emailVerified: new Date(),
@@ -217,8 +217,8 @@ async function main() {
     data: {
       projectNumber: 'BWN-2025-001',
       name: 'Johnson Family Bathroom Renovation',
-      status: ProjectStatus.ACTIVE,
-      stage: ProjectStage.DESIGN_PRESENTED,
+      status: "ACTIVE",
+      stage: "DESIGN_PRESENTED",
       clientName: 'Mr. & Mrs. Johnson',
       clientEmail: 'johnson@email.com',
       clientPhone: '+44 161 555 0101',
@@ -251,8 +251,8 @@ async function main() {
     data: {
       projectNumber: 'BWN-2025-002',
       name: 'Smith Ensuite Installation',
-      status: ProjectStatus.ACTIVE,
-      stage: ProjectStage.INSTALLATION_IN_PROGRESS,
+      status: "ACTIVE",
+      stage: "INSTALLATION_IN_PROGRESS",
       clientName: 'Ms. Smith',
       clientEmail: 'smith@email.com',
       clientPhone: '+44 161 555 0102',

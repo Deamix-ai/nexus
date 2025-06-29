@@ -29,7 +29,7 @@ const projectSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || '';
     const stage = searchParams.get('stage') || '';
     const assignedUserId = searchParams.get('assignedUserId') || '';
-    
+
     const offset = (page - 1) * limit;
 
     // Build where clause
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
         status: "ACTIVE",
         stage: "DESIGN_PRESENTED",
         priority: "MEDIUM",
-        clientName: "Sarah Johnson", 
+        clientName: "Sarah Johnson",
         clientEmail: "sarah.johnson@email.com",
         clientPhone: "07123 456789",
         clientAddress: "123 Main St, London",
@@ -120,14 +120,14 @@ export async function GET(request: NextRequest) {
         }
       },
       {
-        id: "2", 
+        id: "2",
         projectNumber: "2024-002",
         name: "Family Bathroom Upgrade",
         status: "ACTIVE",
         stage: "SURVEY_COMPLETE",
         priority: "HIGH",
         clientName: "Michael Brown",
-        clientEmail: "michael.brown@email.com", 
+        clientEmail: "michael.brown@email.com",
         clientPhone: "07987 654321",
         clientAddress: "456 Oak Avenue, Manchester",
         leadSource: "Referral",
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
         updatedAt: new Date("2024-02-10"),
         assignedUser: {
           id: session.user.id,
-          firstName: "James", 
+          firstName: "James",
           lastName: "Smith",
         },
         showroom: {
@@ -151,9 +151,9 @@ export async function GET(request: NextRequest) {
 
     // Apply filters to mock data
     let filteredProjects = mockProjects;
-    
+
     if (search) {
-      filteredProjects = filteredProjects.filter(p => 
+      filteredProjects = filteredProjects.filter(p =>
         p.name.toLowerCase().includes(search.toLowerCase()) ||
         p.clientName.toLowerCase().includes(search.toLowerCase()) ||
         p.clientEmail.toLowerCase().includes(search.toLowerCase()) ||
@@ -195,7 +195,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -213,7 +213,7 @@ export async function POST(request: NextRequest) {
       projectNumber: `2024-${String(Math.floor(Math.random() * 1000)).padStart(3, '0')}`,
       ...validatedData,
       status: "ACTIVE",
-      stage: "ENQUIRY", 
+      stage: "ENQUIRY",
       clientAddress: JSON.stringify(validatedData.clientAddress),
       enquiryDate: new Date(),
       createdAt: new Date(),
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
       assignedUserId: session.user.id,
     };
 
-    return NextResponse.json({ project: mockProject }, { status: 201 });
+    return NextResponse.json(mockProject, { status: 201 });
 
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     console.error('Error creating project:', error);
     return NextResponse.json(
       { error: "Internal server error" },

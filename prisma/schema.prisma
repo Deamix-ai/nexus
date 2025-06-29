@@ -25,6 +25,7 @@ model User {
   lastLogin         DateTime?
   twoFactorEnabled  Boolean              @default(false)
   twoFactorSecret   String?
+  backupCodes       String               @default("[]")
   passwordResetToken String?
   passwordResetExpires DateTime?
   role              UserRole
@@ -39,6 +40,18 @@ model User {
   showroom          Showroom?            @relation(fields: [showroomId], references: [id])
   assignedProjects  Project[]            @relation("AssignedUser")
   createdProjects   Project[]            @relation("CreatedBy")
+  uploadedDocuments Document[]
+  createdClients    Client[]             @relation("ClientCreatedBy")
+  activities        Activity[]
+  sentMessages      Message[]            @relation("SentMessages")
+  createdTemplates  MessageTemplate[]    @relation("CreatedTemplates")
+  createdWorkflows  CommunicationWorkflow[] @relation("CreatedWorkflows")
+  createdRoles      CustomRole[]         @relation("CreatedRoles")
+  roleAssignments   RoleAssignment[]     @relation("UserRoleAssignments")
+  assignedRoles     RoleAssignment[]     @relation("AssignedRoles")
+  processedPayments Payment[]            @relation("ProcessedPayments")
+  createdInvoices   Invoice[]            @relation("CreatedInvoices")
+  createdSubscriptions Subscription[]    @relation("CreatedSubscriptions")
   sessions          Session[]
   accounts          Account[]
 
@@ -97,6 +110,15 @@ model Showroom {
   // Relationships
   users           User[]
   projects        Project[]
+  documents       Document[]
+  clients         Client[]
+  messages        Message[]
+  messageTemplates MessageTemplate[]
+  workflows       CommunicationWorkflow[]
+  customRoles     CustomRole[]
+  payments        Payment[]
+  invoices        Invoice[]
+  subscriptions   Subscription[]
 
   @@map("showrooms")
 }
@@ -153,8 +175,445 @@ model Project {
   showroom              Showroom          @relation(fields: [showroomId], references: [id])
   assignedUser          User?             @relation("AssignedUser", fields: [assignedUserId], references: [id])
   createdBy             User              @relation("CreatedBy", fields: [createdById], references: [id])
+  documents             Document[]
+  activities            Activity[]
+  messages              Message[]
+  payments              Payment[]
+  invoices              Invoice[]
 
   @@map("projects")
+}
+
+// Document Management
+model Document {
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  type            DocumentType
+  category        String?
+  status          DocumentStatus   @default(ACTIVE)
+  version         Int              @default(1)
+  fileUrl         String
+  fileName        String
+  fileSize        Int
+  mimeType        String
+  tags            String           @default("[]") // JSON array
+  isPublic        Boolean          @default(false)
+  expiresAt       DateTime?
+  
+  // Relationships
+  projectId       String?
+  clientId        String?
+  uploadedById    String
+  showroomId      String?
+  parentId        String?          // For document versions
+  
+  project         Project?         @relation(fields: [projectId], references: [id])
+  client          Client?          @relation(fields: [clientId], references: [id])
+  uploadedBy      User             @relation(fields: [uploadedById], references: [id])
+  showroom        Showroom?        @relation(fields: [showroomId], references: [id])
+  parent          Document?        @relation("DocumentVersions", fields: [parentId], references: [id])
+  versions        Document[]       @relation("DocumentVersions")
+  activities      Activity[]
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  deletedAt       DateTime?
+
+  @@map("documents")
+}
+
+// Client Management
+model Client {
+  id                    String            @id @default(cuid())
+  firstName             String
+  lastName              String
+  email                 String
+  phone                 String?
+  address               String            // JSON string
+  company               String?
+  notes                 String?
+  leadSource            String?
+  status                ClientStatus      @default(ACTIVE)
+  
+  // Preferences
+  preferredContactMethod String?
+  communicationPrefs    String            @default("{}")  // JSON object
+  
+  // Metadata
+  tags                  String            @default("[]") // JSON array
+  customFields          String            @default("{}")  // JSON object
+  showroomId            String
+  createdById           String
+  
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  deletedAt             DateTime?
+
+  // Relationships
+  showroom              Showroom          @relation(fields: [showroomId], references: [id])
+  createdBy             User              @relation("ClientCreatedBy", fields: [createdById], references: [id])
+  documents             Document[]
+  activities            Activity[]
+  messages              Message[]
+  payments              Payment[]
+  invoices              Invoice[]
+  subscriptions         Subscription[]
+
+  @@map("clients")
+}
+
+// Activity tracking for comprehensive audit trail
+model Activity {
+  id              String           @id @default(cuid())
+  type            ActivityType
+  description     String
+  metadata        String           @default("{}")  // JSON for additional data
+  
+  // Relationships
+  userId          String
+  projectId       String?
+  clientId        String?
+  documentId      String?
+  
+  user            User             @relation(fields: [userId], references: [id])
+  project         Project?         @relation(fields: [projectId], references: [id])
+  client          Client?          @relation(fields: [clientId], references: [id])
+  document        Document?        @relation(fields: [documentId], references: [id])
+  
+  createdAt       DateTime         @default(now())
+
+  @@map("activities")
+}
+
+// Communication Management
+model Message {
+  id              String           @id @default(cuid())
+  type            MessageType
+  direction       MessageDirection @default(OUTBOUND)
+  status          MessageStatus    @default(PENDING)
+  
+  // Recipients and Sender
+  fromUserId      String?          // Internal user who sent
+  toEmail         String?          // Email recipient
+  toPhone         String?          // Phone/SMS recipient
+  ccEmails        String?          @default("[]") // JSON array of CC emails
+  bccEmails       String?          @default("[]") // JSON array of BCC emails
+  
+  // Content
+  subject         String?          // For emails
+  body            String           // Message content
+  htmlBody        String?          // HTML content for emails
+  templateId      String?          // Reference to template used
+  
+  // Relationships
+  projectId       String?
+  clientId        String?
+  showroomId      String?
+  
+  // External service tracking
+  externalId      String?          // ID from email/SMS service
+  provider        String?          // 'sendgrid', 'twilio', etc.
+  
+  // Delivery tracking
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  readAt          DateTime?
+  clickedAt       DateTime?
+  repliedAt       DateTime?
+  
+  // Metadata
+  metadata        String           @default("{}")  // JSON for additional data
+  attachments     String           @default("[]")  // JSON array of attachment refs
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relationships
+  fromUser        User?            @relation("SentMessages", fields: [fromUserId], references: [id])
+  project         Project?         @relation(fields: [projectId], references: [id])
+  client          Client?          @relation(fields: [clientId], references: [id])
+  showroom        Showroom?        @relation(fields: [showroomId], references: [id])
+  template        MessageTemplate? @relation(fields: [templateId], references: [id])
+  
+  @@map("messages")
+}
+
+// Message Templates for consistent communication
+model MessageTemplate {
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  type            MessageType
+  category        String?          // 'sales', 'project', 'support', etc.
+  
+  // Template content
+  subject         String?          // For email templates
+  body            String           // Template body with variables
+  htmlBody        String?          // HTML version for emails
+  variables       String           @default("[]") // JSON array of available variables
+  
+  // Settings
+  isActive        Boolean          @default(true)
+  isDefault       Boolean          @default(false)
+  autoSend        Boolean          @default(false) // For automated workflows
+  triggerEvents   String           @default("[]") // JSON array of trigger events
+  
+  // Access control
+  showroomId      String?
+  createdById     String
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relationships
+  showroom        Showroom?        @relation(fields: [showroomId], references: [id])
+  createdBy       User             @relation("CreatedTemplates", fields: [createdById], references: [id])
+  messages        Message[]
+  
+  @@map("message_templates")
+}
+
+// Communication workflows and automation
+model CommunicationWorkflow {
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  isActive        Boolean          @default(true)
+  
+  // Trigger settings
+  triggerEvent    String           // 'stage_change', 'appointment_booked', etc.
+  triggerConditions String         @default("{}")  // JSON conditions
+  
+  // Workflow steps
+  steps           String           // JSON array of workflow steps
+  
+  // Timing
+  delay           Int?             @default(0) // Delay in minutes before execution
+  
+  // Access control
+  showroomId      String?
+  createdById     String
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relationships
+  showroom        Showroom?        @relation(fields: [showroomId], references: [id])
+  createdBy       User             @relation("CreatedWorkflows", fields: [createdById], references: [id])
+  
+  @@map("communication_workflows")
+}
+
+// Payment and Invoice Management
+model Payment {
+  id                String           @id @default(cuid())
+  stripePaymentId   String?          @unique // Stripe payment intent ID
+  stripeChargeId    String?          // Stripe charge ID
+  amount            Float            // Amount in pounds
+  currency          String           @default("gbp")
+  status            PaymentStatus    @default(PENDING)
+  paymentMethod     PaymentMethod    @default(CARD)
+  
+  // Payment details
+  description       String?
+  receiptEmail      String?
+  receiptUrl        String?
+  failureReason     String?
+  
+  // Relationships
+  projectId         String?
+  clientId          String?
+  invoiceId         String?
+  showroomId        String
+  processedById     String
+  
+  project           Project?         @relation(fields: [projectId], references: [id])
+  client            Client?          @relation(fields: [clientId], references: [id])
+  invoice           Invoice?         @relation(fields: [invoiceId], references: [id])
+  showroom          Showroom         @relation(fields: [showroomId], references: [id])
+  processedBy       User             @relation("ProcessedPayments", fields: [processedById], references: [id])
+  
+  // Metadata
+  metadata          String           @default("{}")  // JSON for additional data
+  stripeMetadata    String           @default("{}")  // Stripe-specific metadata
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@map("payments")
+}
+
+model Invoice {
+  id                String           @id @default(cuid())
+  invoiceNumber     String           @unique
+  stripeInvoiceId   String?          @unique // Stripe invoice ID
+  
+  // Invoice details
+  title             String
+  description       String?
+  status            InvoiceStatus    @default(DRAFT)
+  dueDate           DateTime?
+  paidAt            DateTime?
+  
+  // Financial details
+  subtotal          Float
+  taxRate           Float            @default(0.20) // 20% VAT
+  taxAmount         Float
+  totalAmount       Float
+  
+  // Payment tracking
+  amountPaid        Float            @default(0)
+  amountDue         Float
+  
+  // Relationships
+  projectId         String?
+  clientId          String
+  showroomId        String
+  createdById       String
+  
+  project           Project?         @relation(fields: [projectId], references: [id])
+  client            Client           @relation(fields: [clientId], references: [id])
+  showroom          Showroom         @relation(fields: [showroomId], references: [id])
+  createdBy         User             @relation("CreatedInvoices", fields: [createdById], references: [id])
+  
+  // Related records
+  payments          Payment[]
+  lineItems         InvoiceLineItem[]
+  
+  // Metadata
+  notes             String?
+  terms             String?
+  metadata          String           @default("{}")
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  deletedAt         DateTime?
+
+  @@map("invoices")
+}
+
+model InvoiceLineItem {
+  id                String           @id @default(cuid())
+  description       String
+  quantity          Float            @default(1)
+  unitPrice         Float
+  totalPrice        Float
+  
+  // Relationships
+  invoiceId         String
+  invoice           Invoice          @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@map("invoice_line_items")
+}
+
+// Subscription Management for recurring services
+model Subscription {
+  id                String           @id @default(cuid())
+  stripeSubscriptionId String?       @unique
+  stripePriceId     String?
+  stripeCustomerId  String?
+  
+  // Subscription details
+  name              String
+  description       String?
+  status            SubscriptionStatus @default(ACTIVE)
+  
+  // Pricing
+  amount            Float            // Monthly amount
+  currency          String           @default("gbp")
+  interval          String           @default("month") // month, year
+  intervalCount     Int              @default(1)
+  
+  // Dates
+  startDate         DateTime         @default(now())
+  endDate           DateTime?
+  canceledAt        DateTime?
+  trialEnd          DateTime?
+  
+  // Relationships
+  clientId          String
+  showroomId        String
+  createdById       String
+  
+  client            Client           @relation(fields: [clientId], references: [id])
+  showroom          Showroom         @relation(fields: [showroomId], references: [id])
+  createdBy         User             @relation("CreatedSubscriptions", fields: [createdById], references: [id])
+  
+  // Metadata
+  metadata          String           @default("{}")
+  
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  @@map("subscriptions")
+}
+
+// Custom Role and Permission Management
+model CustomRole {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  isActive        Boolean          @default(true)
+  isSystemRole    Boolean          @default(false)
+  baseRole        UserRole?        // Base role to inherit from
+  
+  // Permission settings
+  permissions     String           @default("{}")  // JSON object of permissions
+  dashboard       String?          // Custom dashboard URL
+  settings        String           @default("{}")  // Additional role settings
+  
+  // Access control
+  showroomId      String?
+  createdById     String
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  // Relationships
+  showroom        Showroom?        @relation(fields: [showroomId], references: [id])
+  createdBy       User             @relation("CreatedRoles", fields: [createdById], references: [id])
+  roleAssignments RoleAssignment[]
+  
+  @@map("custom_roles")
+}
+
+// Junction table for user-role assignments
+model RoleAssignment {
+  id              String           @id @default(cuid())
+  userId          String
+  customRoleId    String
+  isActive        Boolean          @default(true)
+  expiresAt       DateTime?
+  assignedById    String
+  
+  assignedAt      DateTime         @default(now())
+  
+  // Relationships
+  user            User             @relation("UserRoleAssignments", fields: [userId], references: [id])
+  customRole      CustomRole       @relation(fields: [customRoleId], references: [id])
+  assignedBy      User             @relation("AssignedRoles", fields: [assignedById], references: [id])
+  
+  @@unique([userId, customRoleId])
+  @@map("role_assignments")
+}
+
+// Permission templates for easy role creation
+model PermissionTemplate {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  category        String           // 'sales', 'operations', 'management', etc.
+  permissions     String           // JSON object of permissions
+  isActive        Boolean          @default(true)
+  
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  
+  @@map("permission_templates")
 }
 
 // Enums
@@ -207,4 +666,119 @@ enum Priority {
   MEDIUM
   HIGH
   URGENT
+}
+
+enum DocumentType {
+  QUOTE
+  CONTRACT
+  INVOICE
+  DESIGN
+  PHOTO
+  CERTIFICATE
+  WARRANTY
+  PERMIT
+  SPECIFICATION
+  FLOOR_PLAN
+  EMAIL
+  OTHER
+}
+
+enum DocumentStatus {
+  ACTIVE
+  ARCHIVED
+  EXPIRED
+  DELETED
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+  MEETING
+  STAGE_CHANGE
+  DOCUMENT_UPLOAD
+  DOCUMENT_DOWNLOAD
+  DOCUMENT_SHARE
+  TASK_CREATED
+  TASK_COMPLETED
+  PAYMENT_RECEIVED
+  QUOTE_SENT
+  CONTRACT_SIGNED
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  CLIENT_CREATED
+  CLIENT_UPDATED
+  USER_LOGIN
+  USER_LOGOUT
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  ARCHIVED
+  PROSPECT
+}
+
+enum MessageType {
+  EMAIL
+  SMS
+  WHATSAPP
+  PHONE_CALL
+  INTERNAL_NOTE
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  REPLIED
+  FAILED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  SUCCEEDED
+  FAILED
+  CANCELED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+  DIRECT_DEBIT
+  CASH
+  CHEQUE
+  BACS
+  FASTER_PAYMENT
+}
+
+enum InvoiceStatus {
+  DRAFT
+  PENDING
+  SENT
+  VIEWED
+  PAID
+  OVERDUE
+  CANCELED
+  REFUNDED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELED
+  PAST_DUE
+  UNPAID
+  TRIALING
+  INCOMPLETE
+  INCOMPLETE_EXPIRED
 }

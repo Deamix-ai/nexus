@@ -17,12 +17,20 @@ const buttonVariants = cva(
           "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
+        // Brand-specific variants
+        brand: "bg-brand-blue text-white hover:bg-brand-blue-dark focus:ring-brand-blue",
+        brandGold: "bg-brand-gold text-white hover:bg-brand-gold-dark focus:ring-brand-gold",
+        brandOutline: "border border-brand-blue text-brand-blue hover:bg-brand-blue hover:text-white focus:ring-brand-blue",
+        success: "bg-green-600 text-white hover:bg-green-700 focus:ring-green-500",
+        warning: "bg-yellow-500 text-white hover:bg-yellow-600 focus:ring-yellow-400",
+        info: "bg-blue-500 text-white hover:bg-blue-600 focus:ring-blue-400",
       },
       size: {
         default: "h-10 px-4 py-2",
         sm: "h-9 rounded-md px-3",
         lg: "h-11 rounded-md px-8",
         icon: "h-10 w-10",
+        xs: "h-8 rounded px-2 text-xs",
       },
     },
     defaultVariants: {

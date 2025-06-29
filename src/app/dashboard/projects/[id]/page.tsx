@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import StageProgression from "@/components/projects/stage-progression";
+import ProjectDocuments from "@/components/projects/project-documents";
+import ProjectCommunications from "@/components/projects/project-communications";
 import ActivityTimeline from "@/components/shared/activity-timeline";
 
 interface Project {
@@ -100,7 +102,7 @@ export default function ProjectDetailPage() {
     const fetchProject = async () => {
       try {
         const response = await fetch(`/api/projects/${projectId}`);
-        
+
         if (!response.ok) {
           if (response.status === 404) {
             setError("Project not found");
@@ -186,7 +188,7 @@ export default function ProjectDetailPage() {
       <div className="flex justify-between items-start">
         <div>
           <div className="flex items-center space-x-2 mb-2">
-            <Link 
+            <Link
               href="/dashboard/projects"
               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
             >
@@ -301,7 +303,7 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* Stage Progression */}
-      <StageProgression 
+      <StageProgression
         currentStage={project.stage}
         projectId={project.id}
         onStageChange={(newStage) => {
@@ -494,6 +496,16 @@ export default function ProjectDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Project Documents */}
+      <ProjectDocuments projectId={project.id} />
+
+      {/* Project Communications */}
+      <ProjectCommunications
+        projectId={project.id}
+        clientEmail={project.clientEmail}
+        clientPhone={project.clientPhone}
+      />
 
       {/* Activity Timeline */}
       <ActivityTimeline projectId={project.id} />

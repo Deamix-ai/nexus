@@ -142,31 +142,31 @@ interface CustomerAutocompleteProps {
 // Function to round time to quarter hour intervals
 const roundToQuarterHour = (dateTimeString: string) => {
   if (!dateTimeString) return '';
-  
+
   // Parse the datetime-local string directly
   const [date, time] = dateTimeString.split('T');
   const [year, month, day] = date.split('-').map(Number);
   const [hour, minute] = time.split(':').map(Number);
-  
+
   // Create date object using local time components
   const dateObj = new Date(year, month - 1, day, hour, minute, 0, 0);
-  
+
   // Round minutes to nearest 15-minute interval
   const roundedMinutes = Math.round(minute / 15) * 15;
-  
+
   if (roundedMinutes === 60) {
     dateObj.setHours(hour + 1, 0, 0, 0);
   } else {
     dateObj.setMinutes(roundedMinutes, 0, 0);
   }
-  
+
   // Format back to datetime-local format
   const resultYear = dateObj.getFullYear();
   const resultMonth = String(dateObj.getMonth() + 1).padStart(2, '0');
   const resultDay = String(dateObj.getDate()).padStart(2, '0');
   const resultHour = String(dateObj.getHours()).padStart(2, '0');
   const resultMinute = String(dateObj.getMinutes()).padStart(2, '0');
-  
+
   return `${resultYear}-${resultMonth}-${resultDay}T${resultHour}:${resultMinute}`;
 };
 
@@ -183,7 +183,7 @@ function QuarterHourTimeInput({ value, onChange, className, min, required, id }:
   const [dateValue, setDateValue] = useState('');
   const [hourValue, setHourValue] = useState('');
   const [minuteValue, setMinuteValue] = useState('');
-  
+
   useEffect(() => {
     if (value) {
       const [date, time] = value.split('T');
@@ -254,7 +254,7 @@ function QuarterHourTimeInput({ value, onChange, className, min, required, id }:
           className="text-sm w-full"
         />
       </div>
-      
+
       {/* Time pickers in a row below */}
       <div className="grid grid-cols-2 gap-3">
         <select
@@ -302,7 +302,7 @@ function AddressAutocomplete({ value, onChange, placeholder, required, className
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        inputRef.current && 
+        inputRef.current &&
         !inputRef.current.contains(event.target as Node) &&
         suggestionsRef.current &&
         !suggestionsRef.current.contains(event.target as Node)
@@ -351,9 +351,9 @@ function AddressAutocomplete({ value, onChange, placeholder, required, className
         />
         <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
       </div>
-      
+
       {showSuggestions && suggestions.length > 0 && (
-        <div 
+        <div
           ref={suggestionsRef}
           className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
         >
@@ -392,7 +392,7 @@ function CustomerAutocomplete({ value, onSelect, placeholder, required, classNam
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
-        inputRef.current && 
+        inputRef.current &&
         !inputRef.current.contains(event.target as Node) &&
         suggestionsRef.current &&
         !suggestionsRef.current.contains(event.target as Node)
@@ -442,9 +442,9 @@ function CustomerAutocomplete({ value, onSelect, placeholder, required, classNam
         />
         <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
       </div>
-      
+
       {showSuggestions && suggestions.length > 0 && (
-        <div 
+        <div
           ref={suggestionsRef}
           className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
         >
@@ -499,6 +499,25 @@ export default function CalendarPage() {
     role: 'Sales Manager'
   } : mockUsers[0]; // Default to first user
 
+  // Get today's events for mobile view
+  const todayEvents = events.filter(event => {
+    const eventDate = new Date(event.startDate);
+    const today = new Date(2025, 5, 28); // June 28, 2025
+    return eventDate.getFullYear() === today.getFullYear() &&
+      eventDate.getMonth() === today.getMonth() &&
+      eventDate.getDate() === today.getDate();
+  });
+
+  // Format time helper function
+  const formatTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
   // Initialize filter based on user role
   useEffect(() => {
     if (currentUser.role === 'Sales Representative') {
@@ -531,7 +550,7 @@ export default function CalendarPage() {
     const handleClickOutside = () => {
       setShowContextMenu(false);
     };
-    
+
     if (showContextMenu) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
@@ -540,7 +559,18 @@ export default function CalendarPage() {
 
   const fetchEvents = async () => {
     try {
-      // Mock data for demonstration with customer names
+      setLoading(true);
+      const response = await fetch('/api/calendar');
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch events');
+      }
+
+      const data = await response.json();
+      setEvents(data.events);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      // Keep existing mock data as fallback for now
       const mockEvents: CalendarEvent[] = [
         {
           id: '1',
@@ -627,6 +657,8 @@ export default function CalendarPage() {
       setEvents(mockEvents);
     } catch (error) {
       console.error('Error fetching events:', error);
+      // Keep existing mock data as fallback
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -634,7 +666,7 @@ export default function CalendarPage() {
 
   const handleCreateEvent = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Debug logging
     console.log('=== CREATE EVENT DEBUG ===');
     console.log('Event data:', newEvent);
@@ -644,25 +676,25 @@ export default function CalendarPage() {
     console.log('Customer ID:', newEvent.customerId);
     console.log('Location:', newEvent.location);
     console.log('=== END DEBUG ===');
-    
+
     // Validate required fields
     if (!newEvent.startDate || !newEvent.endDate) {
       alert('Please select start and end dates');
       return;
     }
-    
+
     // Check if title is required for OTHER event type
     if (newEvent.type === 'OTHER' && !newEvent.title.trim()) {
       alert('Please enter a title for OTHER event type');
       return;
     }
-    
+
     // Check if customer is required for this event type
     if (isCustomerRequired(newEvent.type) && !newEvent.customerId.trim()) {
       alert(`Customer selection is required for ${newEvent.type.toLowerCase().replace('_', ' ')}`);
       return;
     }
-    
+
     // Check if location is required for this event type
     if (isLocationRequired(newEvent.type) && !newEvent.location.trim()) {
       alert(`Location is required for ${newEvent.type.toLowerCase().replace('_', ' ')}`);
@@ -670,22 +702,39 @@ export default function CalendarPage() {
     }
 
     try {
-      // Find assigned user details
-      const assignedUser = mockUsers.find(user => user.id === newEvent.assignedTo) || currentUser;
-      
-      const eventData: CalendarEvent = {
-        id: Math.random().toString(),
-        ...newEvent,
-        title: newEvent.title || getDefaultTitle(newEvent.type), // Use default title if empty
-        status: 'SCHEDULED',
-        attendees: [
-          { id: session?.user?.id || 'unknown', name: session?.user?.name || '', email: session?.user?.email || '', role: 'Organizer' }
-        ],
-        createdBy: { id: session?.user?.id || 'unknown', name: session?.user?.name || '' },
-        assignedTo: { id: assignedUser.id, name: assignedUser.name, role: assignedUser.role },
-      };
+      // Create event via API
+      const response = await fetch('/api/calendar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: newEvent.title || getDefaultTitle(newEvent.type),
+          description: newEvent.description,
+          startDate: newEvent.startDate,
+          endDate: newEvent.endDate,
+          type: newEvent.type,
+          status: 'SCHEDULED',
+          location: newEvent.location,
+          customerId: newEvent.customerId || undefined,
+          customerName: newEvent.customerName || undefined,
+          projectId: newEvent.projectId || undefined,
+          clientId: newEvent.clientId || undefined,
+          assignedToId: newEvent.assignedTo,
+          attendees: [
+            { id: session?.user?.id || 'unknown', name: session?.user?.name || '', email: session?.user?.email || '', role: 'Organizer' }
+          ],
+        }),
+      });
 
-      setEvents(prev => [...prev, eventData]);
+      if (!response.ok) {
+        throw new Error('Failed to create event');
+      }
+
+      const createdEvent = await response.json();
+
+      // Add to local state
+      setEvents(prev => [...prev, createdEvent]);
       setShowAddForm(false);
       setNewEvent({
         title: getDefaultTitle('CONSULTATION'),
@@ -702,6 +751,7 @@ export default function CalendarPage() {
       });
     } catch (error) {
       console.error('Error creating event:', error);
+      alert('Failed to create event. Please try again.');
     }
   };
 
@@ -755,13 +805,13 @@ export default function CalendarPage() {
   const isToday = (date: Date, day: number) => {
     const today = new Date(2025, 5, 28); // June 28, 2025
     return date.getFullYear() === today.getFullYear() &&
-           date.getMonth() === today.getMonth() &&
-           day === today.getDate();
+      date.getMonth() === today.getMonth() &&
+      day === today.getDate();
   };
 
   const getEventsForDate = (date: Date, day: number, isCurrentMonth: boolean = true) => {
     let targetDate: Date;
-    
+
     if (isCurrentMonth) {
       targetDate = new Date(date.getFullYear(), date.getMonth(), day);
     } else {
@@ -775,19 +825,19 @@ export default function CalendarPage() {
         targetDate = new Date(date.getFullYear(), date.getMonth() + 1, day);
       }
     }
-    
+
     const filteredEvents = getFilteredEvents();
     return filteredEvents.filter(event => {
       const eventDate = new Date(event.startDate);
       return eventDate.getFullYear() === targetDate.getFullYear() &&
-             eventDate.getMonth() === targetDate.getMonth() &&
-             eventDate.getDate() === targetDate.getDate();
+        eventDate.getMonth() === targetDate.getMonth() &&
+        eventDate.getDate() === targetDate.getDate();
     });
   };
 
   const handleLeftClick = (e: React.MouseEvent, day: number, isCurrentMonth: boolean = true) => {
     let clickedDate: Date;
-    
+
     if (isCurrentMonth) {
       clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     } else {
@@ -801,7 +851,7 @@ export default function CalendarPage() {
         clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, day);
       }
     }
-    
+
     setSelectedDate(clickedDate);
     setContextMenuPosition({ x: e.clientX, y: e.clientY });
     setIsFromPlusButton(false);
@@ -810,15 +860,15 @@ export default function CalendarPage() {
 
   const handleContextMenuAction = (eventType: CalendarEvent['type'], isFromPlusButton = false) => {
     if (!selectedDate) return;
-    
+
     const businessHours = getBusinessHours();
     const now = new Date(2025, 5, 28); // Current date: June 28, 2025 (Saturday)
     let defaultStart: Date;
-    
+
     if (isFromPlusButton) {
       // Plus button: Use business rules for next available slot
       defaultStart = new Date(now);
-      
+
       // Move to next business day (Monday if today is Saturday)
       if (defaultStart.getDay() === 6) { // Saturday
         defaultStart.setDate(defaultStart.getDate() + 2); // Move to Monday
@@ -835,13 +885,13 @@ export default function CalendarPage() {
           }
         }
       }
-      
+
       // Set to business hours start
       defaultStart.setHours(businessHours.start, 0, 0, 0);
     } else {
       // Calendar day click: Use the selected date
       defaultStart = new Date(selectedDate);
-      
+
       // If the selected date is in the past, move to next business day
       if (selectedDate < now) {
         defaultStart = new Date(now);
@@ -882,7 +932,7 @@ export default function CalendarPage() {
         }
       }
     }
-    
+
     // Format to datetime-local format manually to avoid timezone issues
     const year = defaultStart.getFullYear();
     const month = String(defaultStart.getMonth() + 1).padStart(2, '0');
@@ -890,15 +940,15 @@ export default function CalendarPage() {
     const hour = String(defaultStart.getHours()).padStart(2, '0');
     const minute = String(defaultStart.getMinutes()).padStart(2, '0');
     const startTime = `${year}-${month}-${day}T${hour}:${minute}`;
-    
+
     const endTime = calculateEndTime(startTime, eventType);
     const defaultLocation = getDefaultLocation(eventType);
     const defaultDescription = getDefaultDescription(eventType);
-    
+
     // Check if the slot is available, if not suggest next available
     let finalStart = startTime;
     let finalEnd = endTime;
-    
+
     if (!isTimeSlotAvailable(startTime, endTime)) {
       const suggestion = suggestNextAvailableSlot(startTime, eventType);
       if (suggestion) {
@@ -906,9 +956,9 @@ export default function CalendarPage() {
         finalEnd = suggestion.end;
       }
     }
-    
-    setNewEvent(prev => ({ 
-      ...prev, 
+
+    setNewEvent(prev => ({
+      ...prev,
       type: eventType,
       title: getDefaultTitle(eventType),
       startDate: finalStart,
@@ -922,7 +972,7 @@ export default function CalendarPage() {
   };
 
   const handleUpdateEvent = async (updatedEvent: CalendarEvent) => {
-    setEvents(prev => prev.map(event => 
+    setEvents(prev => prev.map(event =>
       event.id === updatedEvent.id ? updatedEvent : event
     ));
     setEditingEvent(null);
@@ -937,41 +987,41 @@ export default function CalendarPage() {
 
   const calculateEndTime = (startTime: string, eventType: CalendarEvent['type']) => {
     if (!startTime) return '';
-    
+
     console.log('=== DEBUG calculateEndTime ===');
     console.log('Input startTime:', startTime);
     console.log('Event type:', eventType);
     console.log('Duration from defaultDurations:', defaultDurations[eventType], 'minutes');
-    
+
     // Parse the datetime-local string directly without timezone conversion
     const [date, time] = startTime.split('T');
     const [year, month, day] = date.split('-').map(Number);
     const [hour, minute] = time.split(':').map(Number);
-    
+
     console.log('Parsed components:', { year, month, day, hour, minute });
-    
+
     // Create date object using local time components
     const start = new Date(year, month - 1, day, hour, minute, 0, 0);
     console.log('Start date object:', start);
-    
+
     const duration = defaultDurations[eventType]; // Duration in minutes
     console.log('Adding duration:', duration, 'minutes');
-    
+
     // Add duration in minutes
     const end = new Date(start.getTime() + (duration * 60 * 1000));
     console.log('End date object:', end);
-    
+
     // Format back to datetime-local format
     const endYear = end.getFullYear();
     const endMonth = String(end.getMonth() + 1).padStart(2, '0');
     const endDay = String(end.getDate()).padStart(2, '0');
     const endHour = String(end.getHours()).padStart(2, '0');
     const endMinute = String(end.getMinutes()).padStart(2, '0');
-    
+
     const result = `${endYear}-${endMonth}-${endDay}T${endHour}:${endMinute}`;
     console.log('Final result:', result);
     console.log('=== END DEBUG ===');
-    
+
     return result;
   };
 
@@ -998,14 +1048,14 @@ export default function CalendarPage() {
 
   const handleEventTypeChange = (eventType: CalendarEvent['type']) => {
     let startTime = newEvent.startDate;
-    
+
     // If no start time set, use current business hour
     if (!startTime) {
       const now = new Date();
       const businessHours = getBusinessHours();
       const defaultStart = new Date(now);
       defaultStart.setHours(Math.max(now.getHours() + 1, businessHours.start), 0, 0, 0);
-      
+
       // Format to datetime-local format manually
       const year = defaultStart.getFullYear();
       const month = String(defaultStart.getMonth() + 1).padStart(2, '0');
@@ -1014,11 +1064,11 @@ export default function CalendarPage() {
       const minute = String(defaultStart.getMinutes()).padStart(2, '0');
       startTime = `${year}-${month}-${day}T${hour}:${minute}`;
     }
-    
+
     const endTime = calculateEndTime(startTime, eventType);
     const defaultLocation = getDefaultLocation(eventType);
     const defaultDescription = getDefaultDescription(eventType);
-    
+
     setNewEvent(prev => ({
       ...prev,
       type: eventType,
@@ -1035,7 +1085,7 @@ export default function CalendarPage() {
     const startTime = new Date(editingEvent.startDate).toISOString().slice(0, 16);
     const endTime = calculateEndTime(startTime, eventType);
     const defaultLocation = getDefaultLocation(eventType);
-    
+
     setEditingEvent(prev => prev ? ({
       ...prev,
       type: eventType,
@@ -1048,41 +1098,41 @@ export default function CalendarPage() {
   const isTimeSlotAvailable = (startDate: string, endDate: string, excludeEventId?: string) => {
     const start = new Date(startDate);
     const end = new Date(endDate);
-    
+
     console.log('=== CHECKING TIME SLOT AVAILABILITY ===');
     console.log('Checking slot:', start.toLocaleString(), 'to', end.toLocaleString());
     console.log('ExcludeEventId:', excludeEventId);
-    
+
     const conflicts = events.filter(event => {
       if (excludeEventId && event.id === excludeEventId) {
         console.log('Skipping excluded event:', event.id);
         return false;
       }
-      
+
       const eventStart = new Date(event.startDate);
       const eventEnd = new Date(event.endDate);
-      
+
       console.log('Comparing with event:', eventStart.toLocaleString(), 'to', eventEnd.toLocaleString());
-      
+
       // Check for direct overlap - appointments overlap if they share any time
       const hasOverlap = (start < eventEnd && end > eventStart);
       console.log('Has overlap:', hasOverlap);
-      
+
       // Allow back-to-back appointments - no conflict if they just touch
       const isExactlyBackToBack = (start.getTime() === eventEnd.getTime()) || (end.getTime() === eventStart.getTime());
       console.log('Is exactly back-to-back:', isExactlyBackToBack);
-      
+
       const isConflict = hasOverlap && !isExactlyBackToBack;
       console.log('Final conflict result:', isConflict);
       console.log('---');
-      
+
       return isConflict;
     });
-    
+
     const isAvailable = conflicts.length === 0;
     console.log('FINAL RESULT - Time slot available:', isAvailable);
     console.log('=== END CHECK ===');
-    
+
     return isAvailable;
   };
 
@@ -1124,27 +1174,27 @@ export default function CalendarPage() {
     console.log('=== SUGGESTING NEXT AVAILABLE SLOT ===');
     console.log('Preferred start:', preferredStart);
     console.log('Event type:', eventType);
-    
+
     const duration = defaultDurations[eventType];
     let start = new Date(preferredStart);
     const businessHours = getBusinessHours();
-    
+
     console.log('Duration:', duration, 'minutes');
     console.log('Business hours:', businessHours);
-    
+
     // Round to next quarter hour
     const currentMinutes = start.getMinutes();
     const nextQuarterHour = Math.ceil(currentMinutes / 15) * 15;
-    
+
     if (nextQuarterHour >= 60) {
       start.setHours(start.getHours() + 1, 0, 0, 0);
     } else {
       start.setMinutes(nextQuarterHour, 0, 0);
     }
-    
+
     for (let i = 0; i < 14; i++) { // Check next 14 days
       console.log('Checking day:', start.toDateString());
-      
+
       // Skip Sundays
       if (start.getDay() === 0) {
         console.log('Skipping Sunday');
@@ -1152,11 +1202,11 @@ export default function CalendarPage() {
         start.setHours(businessHours.start, 0, 0, 0);
         continue;
       }
-      
+
       // For the first day, start from the calculated time, otherwise start from business hours
       const startHour = i === 0 ? Math.max(start.getHours(), businessHours.start) : businessHours.start;
       const startMinute = i === 0 && start.getHours() >= businessHours.start ? start.getMinutes() : 0;
-      
+
       // Check each quarter-hour slot during business hours
       for (let hour = startHour; hour < businessHours.end; hour++) {
         const minuteStart = (hour === startHour) ? startMinute : 0;
@@ -1165,15 +1215,15 @@ export default function CalendarPage() {
           const testStart = new Date(start);
           testStart.setHours(hour, minute, 0, 0);
           const testEnd = new Date(testStart.getTime() + duration * 60000);
-          
+
           // Skip if event would end after business hours
-          if (testEnd.getHours() > businessHours.end || 
-              (testEnd.getHours() === businessHours.end && testEnd.getMinutes() > 0)) {
+          if (testEnd.getHours() > businessHours.end ||
+            (testEnd.getHours() === businessHours.end && testEnd.getMinutes() > 0)) {
             continue;
           }
-          
+
           console.log('Testing slot:', testStart.toLocaleString(), 'to', testEnd.toLocaleString());
-          
+
           if (isTimeSlotAvailable(testStart.toISOString(), testEnd.toISOString())) {
             console.log('FOUND AVAILABLE SLOT!');
             const result = {
@@ -1188,12 +1238,12 @@ export default function CalendarPage() {
           }
         }
       }
-      
+
       // Move to next day
       start.setDate(start.getDate() + 1);
       start.setHours(businessHours.start, 0, 0, 0);
     }
-    
+
     console.log('No available slot found in 14 days');
     console.log('=== END SUGGESTION ===');
     return null;
@@ -1236,7 +1286,7 @@ export default function CalendarPage() {
           <div className="flex items-center space-x-6">
             <h2 className="text-base font-semibold text-gray-900">{formatMonthYear(currentDate)}</h2>
             <div className="flex space-x-2">
-              <button 
+              <button
                 onClick={() => navigate('prev')}
                 className="p-2 hover:bg-gray-100 rounded transition-colors"
                 title={`Previous ${viewMode}`}
@@ -1245,7 +1295,7 @@ export default function CalendarPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
                 </svg>
               </button>
-              <button 
+              <button
                 onClick={() => navigate('next')}
                 className="p-2 hover:bg-gray-100 rounded transition-colors"
                 title={`Next ${viewMode}`}
@@ -1259,27 +1309,24 @@ export default function CalendarPage() {
         </div>
         <div className="flex items-center space-x-6">
           <div className="flex space-x-2">
-            <button 
+            <button
               onClick={() => setViewMode('day')}
-              className={`px-3 py-2 text-sm font-medium rounded transition-colors ${
-                viewMode === 'day' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-100'
-              }`}
+              className={`px-3 py-2 text-sm font-medium rounded transition-colors ${viewMode === 'day' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-100'
+                }`}
             >
               Day
             </button>
-            <button 
+            <button
               onClick={() => setViewMode('week')}
-              className={`px-3 py-2 text-sm font-medium rounded transition-colors ${
-                viewMode === 'week' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-100'
-              }`}
+              className={`px-3 py-2 text-sm font-medium rounded transition-colors ${viewMode === 'week' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-100'
+                }`}
             >
               Week
             </button>
-            <button 
+            <button
               onClick={() => setViewMode('month')}
-              className={`px-3 py-2 text-sm font-medium rounded transition-colors ${
-                viewMode === 'month' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-100'
-              }`}
+              className={`px-3 py-2 text-sm font-medium rounded transition-colors ${viewMode === 'month' ? 'text-blue-600 bg-blue-100' : 'text-gray-700 hover:bg-gray-100'
+                }`}
             >
               Month
             </button>
@@ -1304,18 +1351,18 @@ export default function CalendarPage() {
             </div>
           )}
           <div className="flex space-x-3">
-            <button 
+            <button
               onClick={goToToday}
               className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
             >
               Today
             </button>
-            <button 
+            <button
               onClick={(e) => {
                 const buttonRect = e.currentTarget.getBoundingClientRect();
-                setContextMenuPosition({ 
+                setContextMenuPosition({
                   x: buttonRect.left - 150,
-                  y: buttonRect.bottom + 10 
+                  y: buttonRect.bottom + 10
                 });
                 setSelectedDate(new Date(2025, 5, 28)); // Set to current date for plus button
                 setIsFromPlusButton(true);
@@ -1355,117 +1402,225 @@ export default function CalendarPage() {
       {/* Calendar Grid */}
       {viewMode === 'month' && (
         <div className="bg-white border border-gray-200 overflow-hidden flex-1">
-          <div className="grid grid-cols-7 gap-px bg-gray-200 h-full">
-            {/* Header Row */}
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-              <div key={day} className="bg-gray-50 px-1 py-1 text-center">
-                <span className="text-xs font-semibold text-gray-900">{day}</span>
-              </div>
-            ))}
-            
-            {/* Calendar Days */}
-            {Array.from({ length: 42 }, (_, i) => {
-              const firstDay = getFirstDayOfMonth(currentDate);
-              const daysInMonth = getDaysInMonth(currentDate);
-              const daysInPrevMonth = getDaysInMonth(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
-              
-              let dayNumber: number;
-              let isCurrentMonth: boolean;
-              let actualDate: Date;
-              
-              if (i < firstDay) {
-                // Previous month days
-                dayNumber = daysInPrevMonth - (firstDay - i - 1);
-                isCurrentMonth = false;
-                actualDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, dayNumber);
-              } else if (i >= firstDay + daysInMonth) {
-                // Next month days
-                dayNumber = i - firstDay - daysInMonth + 1;
-                isCurrentMonth = false;
-                actualDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, dayNumber);
-              } else {
-                // Current month days
-                dayNumber = i - firstDay + 1;
-                isCurrentMonth = true;
-                actualDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayNumber);
-              }
-              
-              const dayEvents = getEventsForDate(currentDate, dayNumber, isCurrentMonth);
-              const isTodayDate = isCurrentMonth && isToday(currentDate, dayNumber);
-              
-              return (
-                <div
-                  key={i}
-                  className={`bg-white px-1 py-1 border-r border-b border-gray-200 relative overflow-hidden hover:bg-gray-50 cursor-pointer ${
-                    !isCurrentMonth ? 'text-gray-400 bg-gray-50' : ''
-                  }`}
-                  style={{ height: 'calc((100vh - 80px) / 6)' }}
-                  onClick={(e) => {
-                    // Don't trigger if clicking on an event
-                    if ((e.target as HTMLElement).closest('.event-item')) return;
-                    handleLeftClick(e, dayNumber, isCurrentMonth);
-                  }}
-                >
-                  <div className={`text-xs font-medium mb-1 ${
-                    isTodayDate 
-                      ? 'bg-blue-500 text-white px-2 py-1 rounded-lg shadow-lg border-2 border-blue-600 text-xs font-bold flex items-center justify-center min-w-[24px] h-6 mx-auto' 
-                      : isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
-                  }`}>
-                    {dayNumber}
-                  </div>
-                  
-                  {/* Events for this date */}
-                  {dayEvents.length > 0 && (
-                    <div className="space-y-px">
-                      {dayEvents.slice(0, 4).map((event, index) => {
-                        const clientName = event.attendees.find(a => a.role === 'Client')?.name || '';
-                        const displayName = event.type === 'OTHER' ? event.title : clientName; // Show title for OTHER events, customer name for others
-                        const eventTime = new Date(event.startDate).toLocaleTimeString('en-US', { 
-                          hour: 'numeric', 
-                          minute: '2-digit',
-                          hour12: true 
-                        });
-                        
-                        return (
-                          <div
-                            key={event.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedEvent(event);
-                            }}
-                            className={`event-item text-xs p-1 rounded cursor-pointer hover:opacity-80 ${eventTypeColors[event.type]} ${
-                              !isCurrentMonth ? 'opacity-60' : ''
-                            }`}
-                            title={`${event.title} - ${displayName} - ${eventTime}`}
-                            style={{
-                              fontSize: '14px',
-                              lineHeight: '1.4',
-                              padding: '3px 5px'
-                            }}
-                          >
-                            <div className="flex items-center justify-between">
-                              <span className="font-semibold" style={{ fontSize: '14px' }}>
-                                {eventTime}
-                              </span>
-                              {displayName && (
-                                <span className="opacity-75 ml-2 truncate" style={{ fontSize: '13px', maxWidth: '160px' }}>
-                                  {displayName}
+          {/* Desktop Calendar */}
+          <div className="hidden lg:block">
+            <div className="grid grid-cols-7 gap-px bg-gray-200 h-full">
+              {/* Header Row */}
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                <div key={day} className="bg-gray-50 px-2 py-2 text-center">
+                  <span className="text-sm font-semibold text-gray-900">{day}</span>
+                </div>
+              ))}
+
+              {/* Calendar Days */}
+              {Array.from({ length: 42 }, (_, i) => {
+                const firstDay = getFirstDayOfMonth(currentDate);
+                const daysInMonth = getDaysInMonth(currentDate);
+                const daysInPrevMonth = getDaysInMonth(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+
+                let dayNumber: number;
+                let isCurrentMonth: boolean;
+                let actualDate: Date;
+
+                if (i < firstDay) {
+                  // Previous month days
+                  dayNumber = daysInPrevMonth - (firstDay - i - 1);
+                  isCurrentMonth = false;
+                  actualDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, dayNumber);
+                } else if (i >= firstDay + daysInMonth) {
+                  // Next month days
+                  dayNumber = i - firstDay - daysInMonth + 1;
+                  isCurrentMonth = false;
+                  actualDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, dayNumber);
+                } else {
+                  // Current month days
+                  dayNumber = i - firstDay + 1;
+                  isCurrentMonth = true;
+                  actualDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayNumber);
+                }
+
+                const dayEvents = getEventsForDate(currentDate, dayNumber, isCurrentMonth);
+                const isTodayDate = isCurrentMonth && isToday(currentDate, dayNumber);
+
+                return (
+                  <div
+                    key={i}
+                    className={`bg-white px-2 py-1 border-r border-b border-gray-200 relative overflow-hidden hover:bg-gray-50 cursor-pointer min-h-[100px] ${!isCurrentMonth ? 'text-gray-400 bg-gray-50' : ''
+                      }`}
+                    style={{ height: 'calc((100vh - 80px) / 6)' }}
+                    onClick={(e) => {
+                      // Don't trigger if clicking on an event
+                      if ((e.target as HTMLElement).closest('.event-item')) return;
+                      handleLeftClick(e, dayNumber, isCurrentMonth);
+                    }}
+                  >
+                    <div className={`text-xs font-medium mb-1 ${isTodayDate
+                        ? 'bg-blue-500 text-white px-2 py-1 rounded-lg shadow-lg border-2 border-blue-600 text-xs font-bold flex items-center justify-center min-w-[24px] h-6 mx-auto'
+                        : isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                      }`}>
+                      {dayNumber}
+                    </div>
+
+                    {/* Events for this date */}
+                    {dayEvents.length > 0 && (
+                      <div className="space-y-px">
+                        {dayEvents.slice(0, 4).map((event, index) => {
+                          const clientName = event.attendees.find(a => a.role === 'Client')?.name || '';
+                          const displayName = event.type === 'OTHER' ? event.title : clientName; // Show title for OTHER events, customer name for others
+                          const eventTime = new Date(event.startDate).toLocaleTimeString('en-US', {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                            hour12: true
+                          });
+
+                          return (
+                            <div
+                              key={event.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedEvent(event);
+                              }}
+                              className={`event-item text-xs p-1 rounded cursor-pointer hover:opacity-80 ${eventTypeColors[event.type]} ${!isCurrentMonth ? 'opacity-60' : ''
+                                }`}
+                              title={`${event.title} - ${displayName} - ${eventTime}`}
+                              style={{
+                                fontSize: '14px',
+                                lineHeight: '1.4',
+                                padding: '3px 5px'
+                              }}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-semibold" style={{ fontSize: '14px' }}>
+                                  {eventTime}
                                 </span>
-                              )}
+                                {displayName && (
+                                  <span className="opacity-75 ml-2 truncate" style={{ fontSize: '13px', maxWidth: '160px' }}>
+                                    {displayName}
+                                  </span>
+                                )}
+                              </div>
                             </div>
+                          );
+                        })}
+                        {dayEvents.length > 4 && (
+                          <div className="text-xs text-gray-500 font-medium" style={{ fontSize: '9px' }}>
+                            +{dayEvents.length - 4} more
                           </div>
-                        );
-                      })}
-                      {dayEvents.length > 4 && (
-                        <div className="text-xs text-gray-500 font-medium" style={{ fontSize: '9px' }}>
-                          +{dayEvents.length - 4} more
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Mobile Calendar - Compact List View */}
+          <div className="lg:hidden">
+            <div className="bg-white">
+              {/* Mobile Header - Days of Week */}
+              <div className="grid grid-cols-7 gap-px bg-gray-200 border-b border-gray-200">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                  <div key={index} className="bg-gray-50 px-1 py-2 text-center">
+                    <span className="text-xs font-semibold text-gray-900">{day}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Mobile Calendar Days - Compact View */}
+              <div className="grid grid-cols-7 gap-px bg-gray-200">
+                {Array.from({ length: 42 }, (_, i) => {
+                  const firstDay = getFirstDayOfMonth(currentDate);
+                  const daysInMonth = getDaysInMonth(currentDate);
+                  const daysInPrevMonth = getDaysInMonth(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+
+                  let dayNumber: number;
+                  let isCurrentMonth: boolean;
+                  let actualDate: Date;
+
+                  if (i < firstDay) {
+                    dayNumber = daysInPrevMonth - (firstDay - i - 1);
+                    isCurrentMonth = false;
+                    actualDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, dayNumber);
+                  } else if (i >= firstDay + daysInMonth) {
+                    dayNumber = i - firstDay - daysInMonth + 1;
+                    isCurrentMonth = false;
+                    actualDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, dayNumber);
+                  } else {
+                    dayNumber = i - firstDay + 1;
+                    isCurrentMonth = true;
+                    actualDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayNumber);
+                  }
+
+                  const dayEvents = getEventsForDate(currentDate, dayNumber, isCurrentMonth);
+                  const isTodayDate = isCurrentMonth && isToday(currentDate, dayNumber);
+
+                  return (
+                    <div
+                      key={i}
+                      className={`bg-white p-1 border-r border-b border-gray-200 relative min-h-[60px] cursor-pointer ${!isCurrentMonth ? 'text-gray-400 bg-gray-50' : ''
+                        } ${isTodayDate ? 'bg-blue-50 ring-1 ring-blue-500' : ''}`}
+                      onClick={() => {
+                        setSelectedDate(actualDate);
+                        setShowAddForm(true);
+                      }}
+                    >
+                      <div className={`text-xs font-medium mb-1 ${isTodayDate ? 'text-blue-600' : isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                        }`}>
+                        {dayNumber}
+                      </div>
+
+                      {/* Mobile Event Indicators - Just dots */}
+                      {dayEvents.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {dayEvents.slice(0, 3).map((event, eventIndex) => (
+                            <div
+                              key={eventIndex}
+                              className={`w-1.5 h-1.5 rounded-full ${eventTypeColors[event.type]?.split(' ')[0] || 'bg-gray-400'}`}
+                              title={event.title}
+                            />
+                          ))}
+                          {dayEvents.length > 3 && (
+                            <div className="text-xs text-gray-500 ml-1">+{dayEvents.length - 3}</div>
+                          )}
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
-              );
-            })}
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Mobile Event List for Today */}
+            <div className="mt-4 bg-white rounded-lg shadow">
+              <div className="p-4 border-b border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900">Today's Events</h3>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {todayEvents.length === 0 ? (
+                  <div className="p-4 text-center text-gray-500">
+                    No events scheduled for today
+                  </div>
+                ) : (
+                  todayEvents.map((event) => (
+                    <div key={event.id} className="p-4 hover:bg-gray-50">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900">{event.title}</h4>
+                          <p className="text-xs text-gray-500">{formatTime(event.startDate)}</p>
+                          {event.customerName && (
+                            <p className="text-xs text-gray-600">{event.customerName}</p>
+                          )}
+                        </div>
+                        <span className={`px-2 py-1 text-xs rounded-full ${eventTypeColors[event.type]}`}>
+                          {event.type.replace('_', ' ')}
+                        </span>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -1478,7 +1633,7 @@ export default function CalendarPage() {
             <div className="bg-gray-50 p-2 text-center">
               <span className="text-sm font-medium text-gray-900">Time</span>
             </div>
-            
+
             {/* Week day headers */}
             {Array.from({ length: 7 }, (_, i) => {
               const date = new Date(currentDate);
@@ -1486,7 +1641,7 @@ export default function CalendarPage() {
               const dayDate = new Date(startOfWeek);
               dayDate.setDate(startOfWeek.getDate() + i);
               const isToday = dayDate.toDateString() === new Date(2025, 5, 28).toDateString();
-              
+
               return (
                 <div key={i} className={`p-2 text-center ${isToday ? 'bg-blue-50' : 'bg-gray-50'}`}>
                   <div className="text-xs text-gray-500">
@@ -1498,12 +1653,12 @@ export default function CalendarPage() {
                 </div>
               );
             })}
-            
+
             {/* Time slots */}
             {Array.from({ length: 12 }, (_, hour) => {
               const timeHour = hour + 7; // 7 AM to 6 PM
               const timeString = `${timeHour > 12 ? timeHour - 12 : timeHour}:00 ${timeHour >= 12 ? 'PM' : 'AM'}`;
-              
+
               return (
                 <React.Fragment key={hour}>
                   <div className="bg-gray-50 p-2 border-r border-b border-gray-200 text-xs text-gray-500">
@@ -1515,14 +1670,14 @@ export default function CalendarPage() {
                     const cellDate = new Date(startOfWeek);
                     cellDate.setDate(startOfWeek.getDate() + day);
                     cellDate.setHours(timeHour, 0, 0, 0);
-                    
+
                     const filteredEvents = getFilteredEvents();
                     const cellEvents = filteredEvents.filter(event => {
                       const eventStart = new Date(event.startDate);
                       return eventStart.toDateString() === cellDate.toDateString() &&
-                             eventStart.getHours() === timeHour;
+                        eventStart.getHours() === timeHour;
                     });
-                    
+
                     return (
                       <div
                         key={day}
@@ -1568,15 +1723,15 @@ export default function CalendarPage() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="border-b border-gray-200 p-4">
             <h3 className="text-lg font-medium text-gray-900">
-              {currentDate.toLocaleDateString('en-US', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
+              {currentDate.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
               })}
             </h3>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-px bg-gray-200">
             <div className="bg-gray-50 p-2 text-center">
               <span className="text-sm font-medium text-gray-900">Time</span>
@@ -1584,24 +1739,24 @@ export default function CalendarPage() {
             <div className="bg-gray-50 p-2 text-center">
               <span className="text-sm font-medium text-gray-900">Events</span>
             </div>
-            
+
             {Array.from({ length: 12 }, (_, hour) => {
               const timeHour = hour + 7; // 7 AM to 6 PM
               const timeString = `${timeHour > 12 ? timeHour - 12 : timeHour}:00 ${timeHour >= 12 ? 'PM' : 'AM'}`;
-              
+
               const filteredEvents = getFilteredEvents();
               const hourEvents = filteredEvents.filter(event => {
                 const eventStart = new Date(event.startDate);
                 return eventStart.toDateString() === currentDate.toDateString() &&
-                       eventStart.getHours() === timeHour;
+                  eventStart.getHours() === timeHour;
               });
-              
+
               return (
                 <React.Fragment key={hour}>
                   <div className="bg-gray-50 p-2 border-r border-b border-gray-200 text-sm text-gray-500">
                     {timeString}
                   </div>
-                  <div 
+                  <div
                     className="bg-white p-2 h-16 border-r border-b border-gray-200 hover:bg-gray-50 cursor-pointer"
                     onClick={(e) => {
                       // Don't trigger if clicking on an event
@@ -1645,7 +1800,7 @@ export default function CalendarPage() {
 
       {/* Event Creation Modal */}
       {showAddForm && (
-        <div 
+        <div
           className="fixed inset-0 overflow-y-auto h-full w-full z-40 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
           onClick={(e) => {
@@ -1667,7 +1822,7 @@ export default function CalendarPage() {
                   </svg>
                 </button>
               </div>
-              
+
               <form onSubmit={handleCreateEvent} className="space-y-4">
                 {/* Title field - only for OTHER event type */}
                 {newEvent.type === 'OTHER' && (
@@ -1686,7 +1841,7 @@ export default function CalendarPage() {
                     />
                   </div>
                 )}
-                
+
                 <div>
                   <Label htmlFor="type" className="text-sm font-medium text-gray-700">Event Type</Label>
                   <select
@@ -1704,7 +1859,7 @@ export default function CalendarPage() {
                     <option value="OTHER">Other (1 hour)</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="assignedTo" className="text-sm font-medium text-gray-700">Assign to</Label>
                   <select
@@ -1720,7 +1875,7 @@ export default function CalendarPage() {
                     ))}
                   </select>
                 </div>
-                
+
                 {/* Customer Selection - Required for non-internal events */}
                 {isCustomerRequired(newEvent.type) && (
                   <div>
@@ -1730,13 +1885,13 @@ export default function CalendarPage() {
                     <CustomerAutocomplete
                       value={newEvent.customerId}
                       onSelect={(customerId, customerName, customerAddress) => {
-                        setNewEvent(prev => ({ 
-                          ...prev, 
+                        setNewEvent(prev => ({
+                          ...prev,
                           customerId,
                           customerName,
                           // Auto-fill location with customer address for surveys
-                          location: prev.type === 'SURVEY' && customerAddress 
-                            ? customerAddress 
+                          location: prev.type === 'SURVEY' && customerAddress
+                            ? customerAddress
                             : prev.location
                         }));
                       }}
@@ -1746,7 +1901,7 @@ export default function CalendarPage() {
                     />
                   </div>
                 )}
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="startDate" className="text-sm font-medium text-gray-700">Start Date</Label>
@@ -1771,7 +1926,7 @@ export default function CalendarPage() {
                     />
                   </div>
                 </div>
-                
+
                 {/* Time slot availability indicator */}
                 {newEvent.startDate && newEvent.endDate && (
                   <div className="text-sm">
@@ -1812,10 +1967,10 @@ export default function CalendarPage() {
                     )}
                   </div>
                 )}
-                
+
                 <div>
                   <Label htmlFor="location" className="text-sm font-medium text-gray-700">
-                    Location 
+                    Location
                     {isLocationRequired(newEvent.type) && <span className="text-red-500 ml-1">*</span>}
                   </Label>
                   {newEvent.type === 'SURVEY' ? (
@@ -1843,7 +1998,7 @@ export default function CalendarPage() {
                     </p>
                   )}
                 </div>
-                
+
                 <div>
                   <Label htmlFor="description" className="text-sm font-medium text-gray-700">Description</Label>
                   <Textarea
@@ -1855,7 +2010,7 @@ export default function CalendarPage() {
                     rows={3}
                   />
                 </div>
-                
+
                 <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                   <Button
                     type="button"
@@ -1865,13 +2020,13 @@ export default function CalendarPage() {
                   >
                     Cancel
                   </Button>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700"
-                    disabled={!isTimeSlotAvailable(newEvent.startDate, newEvent.endDate) || 
-                             (isLocationRequired(newEvent.type) && !newEvent.location.trim()) ||
-                             (isCustomerRequired(newEvent.type) && !newEvent.customerId.trim()) ||
-                             (newEvent.type === 'OTHER' && !newEvent.title.trim())}
+                    disabled={!isTimeSlotAvailable(newEvent.startDate, newEvent.endDate) ||
+                      (isLocationRequired(newEvent.type) && !newEvent.location.trim()) ||
+                      (isCustomerRequired(newEvent.type) && !newEvent.customerId.trim()) ||
+                      (newEvent.type === 'OTHER' && !newEvent.title.trim())}
                   >
                     Create Event
                   </Button>
@@ -1884,7 +2039,7 @@ export default function CalendarPage() {
 
       {/* Event Detail Modal */}
       {selectedEvent && !editingEvent && (
-        <div 
+        <div
           className="fixed inset-0 overflow-y-auto h-full w-full z-40 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
           onClick={(e) => {
@@ -1929,40 +2084,40 @@ export default function CalendarPage() {
                   </button>
                 </div>
               </div>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center text-sm text-gray-600">
                   <Clock className="w-4 h-4 mr-3 text-gray-400" />
                   <span>
-                    {new Date(selectedEvent.startDate).toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
+                    {new Date(selectedEvent.startDate).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
                     })}
                   </span>
                 </div>
-                
+
                 <div className="flex items-center text-sm text-gray-600">
                   <Clock className="w-4 h-4 mr-3 text-gray-400" />
                   <span>
-                    {new Date(selectedEvent.startDate).toLocaleTimeString('en-US', { 
-                      hour: 'numeric', 
+                    {new Date(selectedEvent.startDate).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
                       minute: '2-digit',
-                      hour12: true 
-                    })} - {new Date(selectedEvent.endDate).toLocaleTimeString('en-US', { 
-                      hour: 'numeric', 
+                      hour12: true
+                    })} - {new Date(selectedEvent.endDate).toLocaleTimeString('en-US', {
+                      hour: 'numeric',
                       minute: '2-digit',
-                      hour12: true 
+                      hour12: true
                     })}
                   </span>
                 </div>
-                
+
                 {selectedEvent.location && (
                   <div className="flex items-start text-sm text-gray-600">
                     <MapPin className="w-4 h-4 mr-3 mt-0.5 text-gray-400" />
                     <span className="flex-1">
-                      <a 
+                      <a
                         href={`https://maps.google.com/?q=${encodeURIComponent(selectedEvent.location)}`}
                         target="_blank"
                         rel="noopener noreferrer"
@@ -1973,14 +2128,14 @@ export default function CalendarPage() {
                     </span>
                   </div>
                 )}
-                
+
                 {selectedEvent.description && (
                   <div className="border-t border-gray-200 pt-4">
                     <p className="text-sm font-medium text-gray-900 mb-2">Description</p>
                     <p className="text-sm text-gray-600">{selectedEvent.description}</p>
                   </div>
                 )}
-                
+
                 <div className="border-t border-gray-200 pt-4">
                   <p className="text-sm font-medium text-gray-900 mb-2">Assigned to</p>
                   <div className="flex items-center">
@@ -1995,7 +2150,7 @@ export default function CalendarPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 {selectedEvent.attendees.length > 0 && (
                   <div className="border-t border-gray-200 pt-4">
                     <p className="text-sm font-medium text-gray-900 mb-3">Attendees</p>
@@ -2014,7 +2169,7 @@ export default function CalendarPage() {
                             </div>
                           </div>
                           <div className="flex space-x-2">
-                            <a 
+                            <a
                               href={`mailto:${attendee.email}`}
                               className="p-1 text-gray-400 hover:text-blue-600 transition-colors"
                               title="Send email"
@@ -2022,7 +2177,7 @@ export default function CalendarPage() {
                               <Mail className="w-4 h-4" />
                             </a>
                             {attendee.role === 'Client' && (
-                              <a 
+                              <a
                                 href={`tel:${attendee.email}`}
                                 className="p-1 text-gray-400 hover:text-green-600 transition-colors"
                                 title="Call"
@@ -2045,11 +2200,11 @@ export default function CalendarPage() {
       {/* Context Menu */}
       {showContextMenu && (
         <>
-          <div 
-            className="fixed inset-0 z-40" 
+          <div
+            className="fixed inset-0 z-40"
             onClick={() => setShowContextMenu(false)}
           />
-          <div 
+          <div
             className="fixed bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 min-w-[200px]"
             style={(() => {
               const menuWidth = 200;
@@ -2057,12 +2212,12 @@ export default function CalendarPage() {
               const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
               const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
               const padding = 20; // Safety padding from edges
-              
+
               let left = contextMenuPosition.x;
               let top = contextMenuPosition.y;
               let transformX = '-50%'; // Default: center horizontally
               let transformY = '-10px'; // Default: slightly above click point
-              
+
               // Horizontal positioning
               if (left + menuWidth / 2 > viewportWidth - padding) {
                 // Would go off right edge - align to right of click point
@@ -2071,13 +2226,13 @@ export default function CalendarPage() {
                 // Would go off left edge - align to left of click point
                 transformX = '0%';
               }
-              
+
               // Vertical positioning
               if (top + menuHeight > viewportHeight - padding) {
                 // Would go off bottom edge - show above click point
                 transformY = `calc(-100% - 10px)`;
               }
-              
+
               return {
                 left: `${left}px`,
                 top: `${top}px`,
@@ -2140,7 +2295,7 @@ export default function CalendarPage() {
 
       {/* Edit Event Modal */}
       {editingEvent && (
-        <div 
+        <div
           className="fixed inset-0 overflow-y-auto h-full w-full z-40 flex items-center justify-center p-4"
           style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}
           onClick={(e) => {
@@ -2162,28 +2317,28 @@ export default function CalendarPage() {
                   </svg>
                 </button>
               </div>
-              
+
               <form onSubmit={(e) => {
                 e.preventDefault();
-                
+
                 // Validate title for OTHER event type
                 if (editingEvent.type === 'OTHER' && !editingEvent.title?.trim()) {
                   alert('Please enter a title for OTHER event type');
                   return;
                 }
-                
+
                 // Validate required fields
                 if (isCustomerRequired(editingEvent.type) && !editingEvent.customerId?.trim()) {
                   alert(`Customer selection is required for ${editingEvent.type.toLowerCase().replace('_', ' ')}`);
                   return;
                 }
-                
+
                 // Validate required location for certain event types
                 if (isLocationRequired(editingEvent.type) && !editingEvent.location?.trim()) {
                   alert(`Location is required for ${editingEvent.type.toLowerCase().replace('_', ' ')}`);
                   return;
                 }
-                
+
                 handleUpdateEvent(editingEvent);
               }} className="space-y-4">
                 {/* Title field - only for OTHER event type */}
@@ -2203,7 +2358,7 @@ export default function CalendarPage() {
                     />
                   </div>
                 )}
-                
+
                 <div>
                   <Label htmlFor="edit-type" className="text-sm font-medium text-gray-700">Event Type</Label>
                   <select
@@ -2221,7 +2376,7 @@ export default function CalendarPage() {
                     <option value="OTHER">Other (1 hour)</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <Label htmlFor="edit-assignedTo" className="text-sm font-medium text-gray-700">Assign to</Label>
                   <select
@@ -2230,9 +2385,9 @@ export default function CalendarPage() {
                     onChange={(e) => {
                       const selectedUser = mockUsers.find(user => user.id === e.target.value);
                       if (selectedUser) {
-                        setEditingEvent(prev => prev ? { 
-                          ...prev, 
-                          assignedTo: { id: selectedUser.id, name: selectedUser.name, role: selectedUser.role } 
+                        setEditingEvent(prev => prev ? {
+                          ...prev,
+                          assignedTo: { id: selectedUser.id, name: selectedUser.name, role: selectedUser.role }
                         } : null);
                       }
                     }}
@@ -2245,7 +2400,7 @@ export default function CalendarPage() {
                     ))}
                   </select>
                 </div>
-                
+
                 {/* Customer Selection - Required for non-internal events */}
                 {isCustomerRequired(editingEvent.type) && (
                   <div>
@@ -2255,13 +2410,13 @@ export default function CalendarPage() {
                     <CustomerAutocomplete
                       value={editingEvent.customerId || ''}
                       onSelect={(customerId, customerName, customerAddress) => {
-                        setEditingEvent(prev => prev ? { 
-                          ...prev, 
+                        setEditingEvent(prev => prev ? {
+                          ...prev,
                           customerId,
                           customerName,
                           // Auto-fill location with customer address for surveys
-                          location: prev.type === 'SURVEY' && customerAddress 
-                            ? customerAddress 
+                          location: prev.type === 'SURVEY' && customerAddress
+                            ? customerAddress
                             : prev.location
                         } : null);
                       }}
@@ -2271,7 +2426,7 @@ export default function CalendarPage() {
                     />
                   </div>
                 )}
-                
+
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="edit-startDate" className="text-sm font-medium text-gray-700">Start Date</Label>
@@ -2296,7 +2451,7 @@ export default function CalendarPage() {
                     />
                   </div>
                 </div>
-                
+
                 {/* Time slot availability for editing */}
                 {editingEvent.startDate && editingEvent.endDate && (
                   <div className="text-sm">
@@ -2317,7 +2472,7 @@ export default function CalendarPage() {
                     )}
                   </div>
                 )}
-                
+
                 <div>
                   <Label htmlFor="edit-location" className="text-sm font-medium text-gray-700">
                     Location
@@ -2348,7 +2503,7 @@ export default function CalendarPage() {
                     </p>
                   )}
                 </div>
-                
+
                 <div>
                   <Label htmlFor="edit-description" className="text-sm font-medium text-gray-700">Description</Label>
                   <Textarea
@@ -2360,7 +2515,7 @@ export default function CalendarPage() {
                     rows={3}
                   />
                 </div>
-                
+
                 <div className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                   <Button
                     type="button"
@@ -2370,13 +2525,13 @@ export default function CalendarPage() {
                   >
                     Cancel
                   </Button>
-                  <Button 
-                    type="submit" 
+                  <Button
+                    type="submit"
                     className="px-4 py-2 bg-blue-600 hover:bg-blue-700"
                     disabled={!isTimeSlotAvailable(editingEvent.startDate, editingEvent.endDate, editingEvent.id) ||
-                             (isLocationRequired(editingEvent.type) && !editingEvent.location?.trim()) ||
-                             (isCustomerRequired(editingEvent.type) && !editingEvent.customerId?.trim()) ||
-                             (editingEvent.type === 'OTHER' && !editingEvent.title?.trim())}
+                      (isLocationRequired(editingEvent.type) && !editingEvent.location?.trim()) ||
+                      (isCustomerRequired(editingEvent.type) && !editingEvent.customerId?.trim()) ||
+                      (editingEvent.type === 'OTHER' && !editingEvent.title?.trim())}
                   >
                     Save Changes
                   </Button>

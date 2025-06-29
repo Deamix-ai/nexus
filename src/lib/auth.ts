@@ -138,12 +138,23 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async session({ session, token }) {
-      // Update user activity timestamp
+      // Update user activity timestamp - only if user exists
       if (token?.sub) {
-        await prisma.user.update({
-          where: { id: token.sub },
-          data: { lastLogin: new Date() }
-        }).catch(console.error)
+        try {
+          const userExists = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: { id: true }
+          })
+
+          if (userExists) {
+            await prisma.user.update({
+              where: { id: token.sub },
+              data: { lastLogin: new Date() }
+            })
+          }
+        } catch (error) {
+          console.error('Failed to update user last login:', error)
+        }
       }
     }
   },

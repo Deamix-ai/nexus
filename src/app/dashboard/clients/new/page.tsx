@@ -61,7 +61,7 @@ export default function NewClientPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
-    
+
     if (name.startsWith("address.")) {
       const addressField = name.split(".")[1];
       setFormData(prev => ({
@@ -77,7 +77,7 @@ export default function NewClientPage() {
         [name]: value
       }));
     }
-    
+
     // Clear error when user starts typing
     if (errors[name]) {
       setErrors(prev => ({
@@ -112,7 +112,7 @@ export default function NewClientPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
@@ -133,12 +133,12 @@ export default function NewClientPage() {
         throw new Error(errorData.error || "Failed to create client");
       }
 
-      const { client } = await response.json();
+      const client = await response.json();
       router.push(`/dashboard/clients/${client.id}`);
     } catch (error) {
       console.error("Error creating client:", error);
-      setErrors({ 
-        submit: error instanceof Error ? error.message : "Failed to create client" 
+      setErrors({
+        submit: error instanceof Error ? error.message : "Failed to create client"
       });
     } finally {
       setIsSubmitting(false);
@@ -171,7 +171,7 @@ export default function NewClientPage() {
         {/* Personal Information */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Personal Information</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -182,9 +182,8 @@ export default function NewClientPage() {
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.firstName ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.firstName ? "border-red-500" : "border-gray-300"
+                  }`}
                 placeholder="John"
               />
               {errors.firstName && (
@@ -201,9 +200,8 @@ export default function NewClientPage() {
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.lastName ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.lastName ? "border-red-500" : "border-gray-300"
+                  }`}
                 placeholder="Smith"
               />
               {errors.lastName && (
@@ -220,9 +218,8 @@ export default function NewClientPage() {
                 name="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.email ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.email ? "border-red-500" : "border-gray-300"
+                  }`}
                 placeholder="john.smith@email.com"
               />
               {errors.email && (
@@ -239,9 +236,8 @@ export default function NewClientPage() {
                 name="phone"
                 value={formData.phone}
                 onChange={handleChange}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.phone ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.phone ? "border-red-500" : "border-gray-300"
+                  }`}
                 placeholder="07123 456789"
               />
               {errors.phone && (
@@ -254,7 +250,7 @@ export default function NewClientPage() {
         {/* Address */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Address</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -265,9 +261,8 @@ export default function NewClientPage() {
                 name="address.street"
                 value={formData.address.street}
                 onChange={handleChange}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors["address.street"] ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors["address.street"] ? "border-red-500" : "border-gray-300"
+                  }`}
                 placeholder="123 Main Street"
               />
               {errors["address.street"] && (
@@ -284,9 +279,8 @@ export default function NewClientPage() {
                 name="address.city"
                 value={formData.address.city}
                 onChange={handleChange}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors["address.city"] ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors["address.city"] ? "border-red-500" : "border-gray-300"
+                  }`}
                 placeholder="London"
               />
               {errors["address.city"] && (
@@ -303,9 +297,8 @@ export default function NewClientPage() {
                 name="address.county"
                 value={formData.address.county}
                 onChange={handleChange}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors["address.county"] ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors["address.county"] ? "border-red-500" : "border-gray-300"
+                  }`}
                 placeholder="Greater London"
               />
               {errors["address.county"] && (
@@ -322,9 +315,8 @@ export default function NewClientPage() {
                 name="address.postcode"
                 value={formData.address.postcode}
                 onChange={handleChange}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors["address.postcode"] ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors["address.postcode"] ? "border-red-500" : "border-gray-300"
+                  }`}
                 placeholder="SW1A 1AA"
               />
               {errors["address.postcode"] && (
@@ -337,7 +329,7 @@ export default function NewClientPage() {
         {/* Lead Information */}
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-medium text-gray-900 mb-4">Lead Information</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -347,9 +339,8 @@ export default function NewClientPage() {
                 name="leadSource"
                 value={formData.leadSource}
                 onChange={handleChange}
-                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                  errors.leadSource ? "border-red-500" : "border-gray-300"
-                }`}
+                className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.leadSource ? "border-red-500" : "border-gray-300"
+                  }`}
               >
                 <option value="">Select lead source...</option>
                 {leadSources.map(source => (

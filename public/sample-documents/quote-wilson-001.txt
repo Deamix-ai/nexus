@@ -1,0 +1,38 @@
+# Sample Document - Initial Quote
+
+**Project:** Wilson Master Bathroom Renovation  
+**Quote Number:** Q-2025-001  
+**Date:** June 1, 2025  
+**Valid Until:** June 30, 2025  
+
+## Project Overview
+Complete master bathroom renovation including luxury fixtures, walk-in shower, and heated floors.
+
+## Itemized Quote
+
+### Labor & Installation
+- Demolition and preparation: £1,200
+- Plumbing installation: £2,500
+- Electrical work: £800
+- Tiling and waterproofing: £2,200
+- Installation and finishing: £1,800
+
+### Materials & Fixtures
+- Premium walk-in shower: £3,500
+- Luxury vanity unit: £1,200
+- Smart toilet: £800
+- Heated floor system: £1,500
+- Tiles and materials: £1,200
+
+**Subtotal:** £15,700  
+**VAT (20%):** £3,140  
+**Total:** £18,840  
+
+## Terms & Conditions
+- 50% deposit required upon contract signing
+- Estimated completion: 4-5 weeks
+- 10-year warranty on workmanship
+- 2-year warranty on materials
+
+---
+*This is a sample document for demonstration purposes*
